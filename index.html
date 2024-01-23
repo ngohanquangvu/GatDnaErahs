@@ -409,7 +409,13 @@ def get_proxy(api_proxy):
                     log.configure(state = "disabled")
                     list_key.remove(k)
                     return get_proxy(api_proxy)
+                elif "Request so fast, fix your code or be banned" in a.text:
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy quá nhanh, chờ 10s để lấy lại\n\n')
+                    log.configure(state = "disabled")
+                    time.sleep(10)
                 else:
+                    print(a.text)
                     log.configure(state = "normal")
                     log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thất bại, tiến hành lấy lại\n\n')
                     log.configure(state = "disabled")
