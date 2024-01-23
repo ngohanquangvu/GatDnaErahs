@@ -426,13 +426,11 @@ def start():
                     i.join(int(end_luong.get()))
             else:
                 log.configure(state = "normal")
-                log.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-                log.insert(customtkinter.END, f'Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
+                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
                 log.configure(state = "disabled")
                 break
         log.configure(state = "normal")
-        log.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-        log.insert(customtkinter.END, f'Hoàn thành nhiệm vụ cho list cookie\n\n')
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hoàn thành nhiệm vụ cho list cookie\n\n')
         log.configure(state = "disabled")
     
     t = threading.Thread(target=run)
