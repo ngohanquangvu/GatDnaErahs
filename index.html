@@ -27,29 +27,34 @@ def share_and_tag(ck, proxy, thread_name):
         log.configure(state = "normal")
         log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Tiến hành lấy token\n\n')
         log.configure(state = "disabled")
-        head = {
-            "cookie":ck,
-            "Host":"m.facebook.com",
-            "cache-control":"max-age=0",
-            "upgrade-insecure-requests":"1",
-            "origin":"https://mbasic.facebook.com",
-            "content-type":"application/x-www-form-urlencoded",
-            "user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
-            "accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-            "x-requested-with":"mark.via.gp",
-            "sec-fetch-site":"same-origin",
-            "sec-fetch-mode":"navigate",
-            "sec-fetch-user":"?1",
-            "sec-fetch-dest":"document",
-            "referer":"https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw",
-            "accept-encoding":"gzip, deflate",
-            "accept-language":"vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
-            }
-        get = requests.get("https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw", headers=head, proxies=proxy, timeout=10).text
-        fb_dtsg = get.split('name="fb_dtsg" value="')[1].split('"')[0]
-        scope = get.split('name="scope" value="')[1].split('"')[0]
-        logger_id = get.split('name="logger_id" value="')[1].split('"')[0]
-        encrypted_post_body = get.split('name="encrypted_post_body" value="')[1].split('"')[0]
+        while True:
+            try:
+                head = {
+                    "cookie":ck,
+                    "Host":"m.facebook.com",
+                    "cache-control":"max-age=0",
+                    "upgrade-insecure-requests":"1",
+                    "origin":"https://mbasic.facebook.com",
+                    "content-type":"application/x-www-form-urlencoded",
+                    "user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+                    "accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                    "x-requested-with":"mark.via.gp",
+                    "sec-fetch-site":"same-origin",
+                    "sec-fetch-mode":"navigate",
+                    "sec-fetch-user":"?1",
+                    "sec-fetch-dest":"document",
+                    "referer":"https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw",
+                    "accept-encoding":"gzip, deflate",
+                    "accept-language":"vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+                    }
+                get = requests.get("https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw", headers=head, proxies=proxy, timeout=10).text
+                fb_dtsg = get.split('name="fb_dtsg" value="')[1].split('"')[0]
+                scope = get.split('name="scope" value="')[1].split('"')[0]
+                logger_id = get.split('name="logger_id" value="')[1].split('"')[0]
+                encrypted_post_body = get.split('name="encrypted_post_body" value="')[1].split('"')[0]
+                break
+            except:
+                time.sleep(5)
         data = {
         "cookie":ck,
         "fb_dtsg": fb_dtsg,
@@ -315,6 +320,7 @@ def share_and_tag(ck, proxy, thread_name):
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa Post thành công\n\n')
             log.configure(state = "disabled")
         else:
+            print(a.json())
             log.configure(state = "normal")
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa Post không thành công\n\n')
             log.configure(state = "disabled")
@@ -420,11 +426,13 @@ def start():
                     i.join(int(end_luong.get()))
             else:
                 log.configure(state = "normal")
-                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
+                log.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
+                log.insert(customtkinter.END, f'Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
                 log.configure(state = "disabled")
                 break
         log.configure(state = "normal")
-        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hoàn thành nhiệm vụ cho list cookie\n\n')
+        log.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
+        log.insert(customtkinter.END, f'Hoàn thành nhiệm vụ cho list cookie\n\n')
         log.configure(state = "disabled")
     
     t = threading.Thread(target=run)
