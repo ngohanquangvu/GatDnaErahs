@@ -52,8 +52,8 @@ def share_and_tag(ck, proxy, thread_name):
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sử dụng proxy {proxy}\n\n')
             log.configure(state = "disabled")
             proxy = {
-                "http":f"https://{proxy}",
-                "https":f"https://{proxy}"
+                "http":f"http://{proxy}",
+                "https":f"http://{proxy}"
 
             }
         else:
