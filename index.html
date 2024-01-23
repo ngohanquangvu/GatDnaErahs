@@ -1,9 +1,3 @@
-app = customtkinter.CTk()
-app.title("SHARE AND TAG")
-app.geometry("1100x700")
-app.rowconfigure (0, weight=1)
-app.columnconfigure (0, weight=1)
-
 def check_status():
     global api_proxy, options
     d=0
@@ -93,8 +87,10 @@ def share_and_tag(ck, proxy, thread_name):
                 logger_id = get.split('name="logger_id" value="')[1].split('"')[0]
                 encrypted_post_body = get.split('name="encrypted_post_body" value="')[1].split('"')[0]
                 break
-            except:
-                print(1)
+            except Exception as e:
+                log.configure(state = "normal")
+                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Xảy ra lỗi {e}, tiến hành lấy lại token\n\n')
+                log.configure(state = "disabled")
                 time.sleep(5)
         data = {
         "cookie":ck,
