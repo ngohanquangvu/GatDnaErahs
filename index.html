@@ -4,6 +4,45 @@ app.geometry("1100x700")
 app.rowconfigure (0, weight=1)
 app.columnconfigure (0, weight=1)
 
+def check_status():
+    global api_proxy, options
+    d=0
+    if cookie_textbox.get("0.0", customtkinter.END)=="\n":
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Cookie không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    if link_edited.get("0.0", customtkinter.END)=="\n":
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Link không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    if luong.get()=="":
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Luồng không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    if end_luong.get()=="":
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Thread timeout không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    if api_proxy in options == False:
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Api proxy không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    elif api_proxy==None:
+        if proxy_textbox.get("0.0", customtkinter.END)=="\n":
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Proxy không hợp lệ\n\n')
+            log.configure(state = "disabled")
+            d+=1
+    if d==0:
+        return True
+    else:
+        return False
+
 
 def share_and_tag(ck, proxy, thread_name):
     global api_proxy, list_key, list_content, list_content_edited, list_link, list_content_share
@@ -166,8 +205,8 @@ def share_and_tag(ck, proxy, thread_name):
             log.configure(state = "disabled")
 
         
-        while friends:
-            tags = ",".join(friends[0])
+        def sharee(f, fb_dtsg, proxy, list_content_share):
+            tags = ",".join(f)
             content = random.choice(list_content_share)
             t = r'{"input":{"composer_entry_point":"share_modal","composer_source_surface":"feed_story","composer_type":"share","idempotence_token":"'+str(uuid.uuid4())+r'_FEED","source":"WWW","is_tracking_encrypted":true,"tracking":["AZXRHyzzOjSaZJPV-AYf__z_U4K_N2AK6zzXqyAqxK-_4dNgoVZdEoC6pL5tWyU5uHNYisEMpQd8S2BbKvq671SeGFoIoKwY0BJjnCvdGAfXxl6s4YobPoh2OwbO3NNFDs91YyTVsaLz16LdBh6Tz5rIgVNtyqjY3JyOzLOwf_weUgDFmLtF6wLdIBblloz2vUiTxW61oqF_m2NEIQYm4BNm_zX6An-yjATw1vMo4d_Pr1o2EWGDS1v37fn7DarEialSIJ41z1kyav8Ng_XEERQcfZ1A2FBxs0bnRWs9jz3-13X_R44ui9B5hvM9xmrf51fZrFF9nlPe-HKnjBe9EduZUZgI6ZGpKqTsQhxoyIZ-8fDRnSKvAMMttnnlPGqK0kr8u-WD_3w4nREcFLzuNViGPgY3F586MuhCo2kxxN35qsa6xdgInJyQhjjOgnUVFm1sRxUoNWPJpG6sQayWPKrga3IpfQdskZNW1oFhBOWMDP04vvOnTgGaN0wjDXibkkn3T2LJkeJaejSXoH0xNxkt1j_PChCE8tbty23jZO96Fwv1jfIqrzA-_h_iPPYD808gSP1bz4hQJKT5DzPROM3h2dmcmJOmJRbd4l8w_0zWD95D_bdL331KDy1g-sgZtSU5pZ3my54lf0YQAtXO1IJYP1mxNfpH3HpTDlsD9hUEqCfZwfi_LZxthKuOXavaaqM72THij0X-_Y8U7z2x5N3N0ss-MpzX3useF3THgo9uoeQinwvViopoPkUxm68OAPGasdACK04HsTOePKTI8iKH3hBhepF8mJwcofsu18ll-b8fPH9nsfIveAnEBD9u3hTQgoxvNRciffUl9wA_tr276mM8UEvjM9YBNz1VclnBCiUVH1AviXe2RHCGO4zXf-Q04b9QadcwN56pAXwowDusrvoMh9ooi6ARNJM0DvnjEP8MVn1UEeD9G0jUGrupqUrsNBSPAFqjBGVQmhrgQg9KwrO0oD2hnEtNyi9xDDQLGX1zjFTICtmRv7R_kLkEW6qg4BVBFnIy0wD4_TYBqg3EgclkQEUVGy2iNJ9ogYCxEZzrpJc07nbdyRum1IH4RujiFCBzhYp9T5smM8TcWDwzTesWYbhpC3xhuAf7HR7UwNdnHnJ5vwzFmhCPTUcbH8YeYoEteC3_IrCLzrVWw9bfDhN7CdZP1nd_KIExDD_eaLDnPQi_i5Ni9ns7u6F6c7YekIdOkDPIKp5H12ztGszydAxKtCGpG9iHoF_BwJDZ8BdH2cNyBpqSWVa8RjUvUHShWAiMUhxtoT4nVGacgbse7Sil6og1OYOqX4dAeknrw8OMaB3TinDqlL1xGUIATj9xLEZetqo09E8Z0rZlMPwavG4u03v4UwidOH_kINIJi3rN1cED7RC_44RP4MrAD7CXkDIPq5wjokBLh3pjT5VP3r1ZzNLfqXziiGT_nsItBX2lSsqKCg0pYMHjW_Ghl62ISPnUc2mjKIHrjKW91ObTqC7R1uUfxi4ciASECLN5EzmclQG4Q73uEdH7oMYxkVE",null],"audience":{"privacy":{"allow":[],"base_state":"EVERYONE","deny":[],"tag_expansion_state":"UNSPECIFIED"}},"message":{"ranges":[],"text":"'+content+r'"},"inline_activities":[],"text_format_preset_id":"0","attachments":[{"link":{"share_scrape_data":"{\"share_type\":22,\"share_params\":['+id_post+r']}"}}],"with_tags_ids":['+tags+r'],"logging":{"composer_session_id":"'+str(uuid.uuid4())+r'"},"navigation_data":{"attribution_id_v2":"ProfileCometContextualProfileRoot.react,comet.profile.contextual_profile,unexpected,1705683508095,55072,,,;CometPhotoRoot.react,comet.mediaviewer.photo,unexpected,1705683497241,814714,,304#10#82,;ProfileCometTimelineListViewRoot.react,comet.profile.timeline.list,unexpected,1705683448219,988418,190055527696468,12#15#340#301,;CometGroupPermalinkRoot.react,comet.group.permalink,unexpected,1705683391206,449156,2361831622,,;CometPhotoRoot.react,comet.mediaviewer.photo,unexpected,1705683387474,543007,,229#82,;ProfileCometTimelineListViewRoot.react,comet.profile.timeline.list,via_cold_start,1705682687332,563868,190055527696468,12#15#340#301,"},"event_share_metadata":{"surface":"newsfeed"},"actor_id":"'+actor_id+r'","client_mutation_id":"5"},"displayCommentsFeedbackContext":null,"displayCommentsContextEnableComment":null,"displayCommentsContextIsAdPreview":null,"displayCommentsContextIsAggregatedShare":null,"displayCommentsContextIsStorySet":null,"feedLocation":"NEWSFEED","feedbackSource":1,"focusCommentID":null,"gridMediaWidth":null,"groupID":null,"scale":1.5,"privacySelectorRenderLocation":"COMET_STREAM","checkPhotosToReelsUpsellEligibility":true,"renderLocation":"homepage_stream","useDefaultActor":false,"inviteShortLinkKey":null,"isFeed":true,"isFundraiser":false,"isFunFactPost":false,"isGroup":false,"isEvent":false,"isTimeline":false,"isSocialLearning":false,"isPageNewsFeed":false,"isProfileReviews":false,"isWorkSharedDraft":false,"UFI2CommentsProvider_commentsKey":"CometModernHomeFeedQuery","hashtag":null,"canUserManageOffers":false,"__relay_internal__pv__CometUFIIsRTAEnabledrelayprovider":false,"__relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider":false,"__relay_internal__pv__IsWorkUserrelayprovider":false,"__relay_internal__pv__IsMergQAPollsrelayprovider":false,"__relay_internal__pv__StoriesArmadilloReplyEnabledrelayprovider":false,"__relay_internal__pv__StoriesRingrelayprovider":false}'
 
@@ -178,7 +217,7 @@ def share_and_tag(ck, proxy, thread_name):
 
             a = requests.post("https://www.facebook.com/api/graphql/", headers=h, data=d, proxies=proxy, timeout=10)
             if ('story_id' in a.text):
-                friends.remove(friends[0])  
+                friends.remove(f)  
                 log.configure(state = "normal")
                 log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Share và tag thành công, còn {sum(len(list_nho) for list_nho in friends)} bạn bè\n\n')
                 log.configure(state = "disabled")
@@ -231,6 +270,13 @@ def share_and_tag(ck, proxy, thread_name):
             try:
                 time.sleep(3)
             except:pass
+        threadss = []
+        for i in friends:
+                threadss+=[threading.Thread(target=sharee,args=(i,fb_dtsg,proxy,list_content_share))]
+        for i in threadss:
+            i.start()
+        for i in threadss:
+            i.join()
     
 
         content = str(random.choice(list_content_edited))
@@ -395,51 +441,53 @@ def get_proxy(api_proxy):
     
 def start():
     global api_proxy, list_key, list_content, list_content_edited, list_link, list_content_share
+    if check_status()==True:
+        list_key = proxy_textbox.get("0.0", customtkinter.END).split("\n")
+        list_key = list_key[:len(list_key)-1]
+        list_cookie = cookie_textbox.get("0.0", customtkinter.END).split("\n")
+        list_cookie = list_cookie[:len(list_cookie)-1]
+        list_content = content_trc_textbox.get("0.0", customtkinter.END).split("\n")
+        list_content = list_content[:len(list_content)-1]
+        list_content_edited = content_sau_textbox.get("0.0", customtkinter.END).split("\n")
+        list_content_edited = list_content_edited[:len(list_content_edited)-1]
+        list_content_share = content_share_textbox.get("0.0", customtkinter.END).split("\n")
+        list_content_share = list_content_share[:len(list_content_share)-1]
+        list_link = link_edited.get("0.0", customtkinter.END).split("\n")
+        list_link = list_link[:len(list_link)-1]
 
-    list_key = proxy_textbox.get("0.0", customtkinter.END).split("\n")
-    list_key = list_key[:len(list_key)-1]
-    list_cookie = cookie_textbox.get("0.0", customtkinter.END).split("\n")
-    list_cookie = list_cookie[:len(list_cookie)-1]
-    list_content = content_trc_textbox.get("0.0", customtkinter.END).split("\n")
-    list_content = list_content[:len(list_content)-1]
-    list_content_edited = content_sau_textbox.get("0.0", customtkinter.END).split("\n")
-    list_content_edited = list_content_edited[:len(list_content_edited)-1]
-    list_content_share = content_share_textbox.get("0.0", customtkinter.END).split("\n")
-    list_content_share = list_content_share[:len(list_content_share)-1]
-    list_link = link_edited.get("0.0", customtkinter.END).split("\n")
-    list_link = list_link[:len(list_link)-1]
-
-    def run():
-        for i in range(0,len(list_cookie),int(luong.get())):
-            threads=[]
-            aaa = list_cookie[i:i+int(luong.get())]
-            p = get_proxy(api_proxy)
-            print(p)
-            if p!="break":
-                for i in range(len(aaa)):
-                    c = aaa[i]
-                    thread_name = f"Thread {i+1}"
-                    threads+=[threading.Thread(target=share_and_tag,args=(c, p,thread_name))]
-                for i in threads:
-                    i.start()
-                for i in threads:
-                    i.join(int(end_luong.get()))
-            else:
-                log.configure(state = "normal")
-                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
-                log.configure(state = "disabled")
-                break
-        log.configure(state = "normal")
-        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hoàn thành nhiệm vụ cho list cookie\n\n')
-        log.configure(state = "disabled")
-    
-    t = threading.Thread(target=run)
-    t.start()
+        def run():
+            for i in range(0,len(list_cookie),int(luong.get())):
+                threads=[]
+                aaa = list_cookie[i:i+int(luong.get())]
+                p = get_proxy(api_proxy)
+                print(p)
+                if p!="break":
+                    for i in range(len(aaa)):
+                        c = aaa[i]
+                        thread_name = f"Thread {i+1}"
+                        threads+=[threading.Thread(target=share_and_tag,args=(c, p,thread_name))]
+                    for i in threads:
+                        i.start()
+                    for i in threads:
+                        i.join(int(end_luong.get()))
+                else:
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
+                    log.insert(customtkinter.END, f'Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
+                    log.configure(state = "disabled")
+                    break
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
+            log.insert(customtkinter.END, f'Hoàn thành nhiệm vụ cho list cookie\n\n')
+            log.configure(state = "disabled")
+        
+        t = threading.Thread(target=run)
+        t.start()
 
 def test():
-    list_cookie = cookie_textbox.get("0.0", customtkinter.END).split("\n")
-    list_cookie = list_cookie[:len(list_cookie)-1]
-    print(list_cookie)
+    list_cookie = cookie_textbox.get("0.0", customtkinter.END)
+    print(list_cookie=="\n")
+    print(luong.get()=="")
 
 menu = customtkinter.CTkFrame(app, height=290)
 menu.grid(row = 0, column = 0, pady = (10, 10), padx = 20, sticky = "nsew")
