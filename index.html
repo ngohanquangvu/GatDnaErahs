@@ -52,8 +52,8 @@ def share_and_tag(ck, proxy, thread_name):
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sử dụng proxy {proxy}\n\n')
             log.configure(state = "disabled")
             proxy = {
-                "http":f"http://{proxy}",
-                "https":f"http://{proxy}"
+                "http":f"https://{proxy}",
+                "https":f"https://{proxy}"
 
             }
         else:
@@ -172,17 +172,17 @@ def share_and_tag(ck, proxy, thread_name):
             "Content-Type":"application/x-www-form-urlencoded"
         }
 
-        a = requests.post("https://www.facebook.com/api/graphql/", headers=h, data=d, proxies=proxy, timeout=10).json()
+        a = requests.post("https://www.facebook.com/api/graphql/", headers=h, data=d, proxies=proxy, timeout=10)
 
 
         try:
-            story_id = a['data']['story_create']['story']['id']
-            id_post = a['data']['story_create']['timeline_feed_units_edge']['node']['post_id']
+            story_id = a.json()['data']['story_create']['story']['id']
+            id_post = a.json()['data']['story_create']['timeline_feed_units_edge']['node']['post_id']
             log.configure(state = "normal")
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Đăng thành công, id post là {id_post}\n\n')
             log.configure(state = "disabled")
         except:
-            print(a)
+            open("log.txt","a", encoding="utf-8").write("post"+a.text+"\n")
             log.configure(state = "normal")
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}:Đăng không thành công\n\n')
             log.configure(state = "disabled")
@@ -263,7 +263,7 @@ def share_and_tag(ck, proxy, thread_name):
                 get = requests.get("https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw", headers=head, proxies=proxy, timeout=10).text
                 fb_dtsg = get.split('name="fb_dtsg" value="')[1].split('"')[0]
             else:
-                print(a.json())
+                open("log.txt","a", encoding="utf-8").write("share"+a.text+"\n")
                 log.configure(state = "normal")
                 log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Share và tag không thành công, còn {sum(len(list_nho) for list_nho in friends)} bạn bè\n\n')
                 log.configure(state = "disabled")
@@ -366,7 +366,7 @@ def share_and_tag(ck, proxy, thread_name):
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa Post thành công\n\n')
             log.configure(state = "disabled")
         else:
-            print(a.json())
+            open("log.txt","a", encoding="utf-8").write("edit"+a.text+"\n")
             log.configure(state = "normal")
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa Post không thành công\n\n')
             log.configure(state = "disabled")
