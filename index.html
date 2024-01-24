@@ -243,7 +243,7 @@ def share_and_tag(ck, proxy, thread_name):
                 d = f"av={actor_id}&__user={actor_id}&__a=1&__req=3l&__hs=19741.HYP%3Acomet_pkg.2.1..2.1&dpr=1.5&__ccg=EXCELLENT&__rev=1010907637&__s=xg5nhh%3Avxw8eh%3A6k4k0l&__hsi=7325851358205522694&__dyn=7AzHK4HwBgDx-5Q1ryaxG4Qihw9uu2i5U4e2C3-ubyQdwSAx-bwNwnof8boG4E762S1DwUx60xU8k0Z82_CxS320om78bbwto88422y11xmfz822wtU4a3a4oaEnxO0Bo4O2-2l2Utwwg4u0Mo4G1hx-3m1mzXw8W58jwGzEjzFU5e7oqBwJK2W5olwUwgojUlDw-wUwxwhFVovUaU3qxWm2CVEbUGdG1Fwh888cA0z8c84q58jwTwNxe6Uak2-362S269wkopg6C13whEeEfE-VU-4E&__csr=g4xf24psblazi8evsAJh5jcBTYl9kD9lqkB_EB4G-GFtdlKzdQQyy5O4l4nJ5JrcXJ9Sl5x4Ba9XpVuVeVaQV5iV9frAh6Kt94gXqqq-FfG-iBQFWaKqUgKG-VFVJeeiK9hkleB8Q8yFui8AAy9EKF-joDJx6iaVAiiimhpFEG4VEyjDyn-iiUZyXWXVEtyucyElAx68yVax2Ekxi447ECbBCADx2vKvy99pUCFpQez9UjK4UG9xCny9FBoiUK48xGEph8KV8y4Ap4wEyVSUjAwHxG8GK23pp-XyF8rCzqBK6poa9VopwNzrXwDmp2VlwBK5E9KEmxS6Egggx6fyoaokx22mE52Vo4e647Wzokx2fg8RUFa6EabKbDy8kK262O7UmwSxuaxm8yE8DilbGTKmJ7yEliyEnGuGih7IFbz4G8AFKhSEgAAGax28LQcVu5eQqiibzKq8VAHy-UK9BG8wacE38qxF0Vg4qS4k2a4o26gC362m0g-0T8c65EbE4a0zo7O7o43gvy8DDxx0EypA11w9y4U2zwoFeu2h0SwQDF0p84S0R83lw5sw2wE0hF5a3K04xU0Ram0a6w61G0iO2S07oUsw2Gkbw0r1o0SK03uVa4A5e1CwywEw48w4ng13A0l6q0Wo0wy08yw45x6080w4Uwb-0q-3kE2XwWwcy023a04_8Gu0dKw9B6Dggg0J-0Zo2hByUvwsA07xEqwd-0JodE0KAw3OS02jq0Ii0Cw4Uw4Uo6C0kp025VUgweC0M9B9Bhovxa0kS0hl05gDDw6jwaOaw&__comet_req=15&fb_dtsg={fb_dtsg}&jazoest=25336&lsd=QPyerKA9YVXg_kLnBvDEq4&__aaid=0&__spin_r=1010907637&__spin_b=trunk&__spin_t=1705682687&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=ComposerStoryCreateMutation&variables={input_link}&server_timestamps=true&doc_id=7110234585697714"
 
                 a = requests.post("https://www.facebook.com/api/graphql/", headers= {"cookie":ck,"Content-Type":"application/x-www-form-urlencoded"}, data=d, proxies=proxy, timeout=20)
-                if ('story_id' in a.text):
+                if ('data' in a.text) and ("story_create" in a.text) and ("story_id" in a.text):
                     friends.remove(f)  
                     try:
                         uuuid_post = a.json()['data']["story_create"]["story_id"]
@@ -289,9 +289,10 @@ def share_and_tag(ck, proxy, thread_name):
                     fb_dtsg = get.split('name="fb_dtsg" value="')[1].split('"')[0]
                     sharee(f, fb_dtsg, proxy, list_content_share, id_post, ck)
                 else:
-                    log.configure(state = "normal")
-                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Share và tag không thành công, còn {sum(len(list_nho) for list_nho in friends)} bạn bè\n\n')
-                    log.configure(state = "disabled")
+                    pass
+                    # log.configure(state = "normal")
+                    # log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Share và tag không thành công, còn {sum(len(list_nho) for list_nho in friends)} bạn bè\n\n')
+                    # log.configure(state = "disabled")
                 time.sleep(3)
             except:
                 time.sleep(3)
