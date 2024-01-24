@@ -45,7 +45,7 @@ def check_status():
 
 
 def share_and_tag(ck, proxy, thread_name):
-    global api_proxy, list_key, list_content, list_content_edited, list_link, list_content_share, api_proxy
+    global api_proxy, list_key, list_content, list_content_edited, list_link, list_content_share, api_proxy, running
     try:
         if proxy!=None:
             log.configure(state = "normal")
@@ -68,7 +68,7 @@ def share_and_tag(ck, proxy, thread_name):
         log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Tiến hành lấy token\n\n')
         log.configure(state = "disabled")
         dem = 0
-        while True:
+        while running:
             try:
                 head = {
                     "cookie":ck,
@@ -115,17 +115,35 @@ def share_and_tag(ck, proxy, thread_name):
                 "return_format[]":"access_token"
                 }
                 get = requests.post("https://m.facebook.com/dialog/oauth/skip/submit/?paipv=0&eav=Afa2uLWDW0GTp9dR1Q9kn2mF90FWnFS6bk2nYDeGhRY_vS_DZOkGVLsNRVEQUHAp9VU", headers=head, data=data, proxies=proxy, timeout=20).text
-                access_token = get.split("#access_token=")[1].split("&")[0]
+                try:
+                    access_token = get.split("#access_token=")[1].split("&")[0]
+                except:
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Cookie bị lỗi, không lấy được token\n\n')
+                    log.configure(state = "disabled")
+                    running = False
                 break
             except Exception as e:
-                dem +=1
-                if dem>=5:
-                    proxy = get_proxy(api_proxy)
+                traceback.print_exc()
                 log.configure(state = "normal")
                 log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Xảy ra lỗi {e}, tiến hành lấy lại token\n\n')
                 log.configure(state = "disabled")
-                time.sleep(5)
+                dem +=1
+                if dem>=5:
+                    proxy = get_proxy(api_proxy)
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sử dụng proxy {proxy}\n\n')
+                    log.configure(state = "disabled")
+                    proxy = {
+                        "http":f"http://{proxy}",
+                        "https":f"http://{proxy}"
 
+                    }
+                    dem = 0
+                    print(proxy)
+                time.sleep(5)
+        if running == False:
+            except_error()
         log.configure(state = "normal")
         log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Lấy token thành công\n\n')
         log.configure(state = "disabled")
@@ -234,18 +252,17 @@ def share_and_tag(ck, proxy, thread_name):
                         a = requests.post("https://www.facebook.com/api/graphql/", headers= {"cookie":ck,"Content-Type":"application/x-www-form-urlencoded"}, data=d).text
 
                         if uuuid_post in a:
-                            log.configure(state = "normal")
-                            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn thành công post share có id {uuuid_post}\n\n')
-                            log.configure(state = "disabled")
+                            pass
+                            # log.configure(state = "normal")
+                            # log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn thành công post share có id {uuuid_post}\n\n')
+                            # log.configure(state = "disabled")
                         elif "checkpoint" in a:
                             log.configure(state = "normal")
                             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Tài khoản bị checkpoint\n\n')
                             log.configure(state = "disabled")
                             except_error
                         else:
-                            log.configure(state = "normal")
-                            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn không thành công post share có id {uuuid_post}\n\n')
-                            log.configure(state = "disabled")
+                            pass
                     except Exception as e:
                         print(e)
                         print(a.text)
