@@ -45,7 +45,7 @@ def check_status():
 
 
 def share_and_tag(ck, proxy, thread_name):
-    global api_proxy, list_key, list_content, list_content_edited, list_link, list_content_share
+    global api_proxy, list_key, list_content, list_content_edited, list_link, list_content_share, api_proxy
     try:
         if proxy!=None:
             log.configure(state = "normal")
@@ -67,6 +67,7 @@ def share_and_tag(ck, proxy, thread_name):
         log.configure(state = "normal")
         log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Tiến hành lấy token\n\n')
         log.configure(state = "disabled")
+        dem = 0
         while True:
             try:
                 head = {
@@ -92,35 +93,39 @@ def share_and_tag(ck, proxy, thread_name):
                 scope = get.split('name="scope" value="')[1].split('"')[0]
                 logger_id = get.split('name="logger_id" value="')[1].split('"')[0]
                 encrypted_post_body = get.split('name="encrypted_post_body" value="')[1].split('"')[0]
+                data = {
+                "cookie":ck,
+                "fb_dtsg": fb_dtsg,
+                "jazoest":"25480",
+                "scope":scope,
+                "display":"touch",
+                "sdk":"",
+                "sdk_version":"",
+                "domain":"",
+                "sso_device":"ios",
+                "state":"",
+                "user_code":"",
+                "nonce":"",
+                "logger_id":logger_id,
+                "auth_type":"",
+                "auth_nonce":"",
+                "code_challenge":"",
+                "code_challenge_method":"",
+                "encrypted_post_body":encrypted_post_body,
+                "return_format[]":"access_token"
+                }
+                get = requests.post("https://m.facebook.com/dialog/oauth/skip/submit/?paipv=0&eav=Afa2uLWDW0GTp9dR1Q9kn2mF90FWnFS6bk2nYDeGhRY_vS_DZOkGVLsNRVEQUHAp9VU", headers=head, data=data, proxies=proxy, timeout=20).text
+                access_token = get.split("#access_token=")[1].split("&")[0]
                 break
             except Exception as e:
+                dem +=1
+                if dem>=5:
+                    proxy = get_proxy(api_proxy)
                 log.configure(state = "normal")
                 log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Xảy ra lỗi {e}, tiến hành lấy lại token\n\n')
                 log.configure(state = "disabled")
                 time.sleep(5)
-        data = {
-        "cookie":ck,
-        "fb_dtsg": fb_dtsg,
-        "jazoest":"25480",
-        "scope":scope,
-        "display":"touch",
-        "sdk":"",
-        "sdk_version":"",
-        "domain":"",
-        "sso_device":"ios",
-        "state":"",
-        "user_code":"",
-        "nonce":"",
-        "logger_id":logger_id,
-        "auth_type":"",
-        "auth_nonce":"",
-        "code_challenge":"",
-        "code_challenge_method":"",
-        "encrypted_post_body":encrypted_post_body,
-        "return_format[]":"access_token"
-        }
-        get = requests.post("https://m.facebook.com/dialog/oauth/skip/submit/?paipv=0&eav=Afa2uLWDW0GTp9dR1Q9kn2mF90FWnFS6bk2nYDeGhRY_vS_DZOkGVLsNRVEQUHAp9VU", headers=head, data=data, proxies=proxy, timeout=20).text
-        access_token = get.split("#access_token=")[1].split("&")[0]
+
         log.configure(state = "normal")
         log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Lấy token thành công\n\n')
         log.configure(state = "disabled")
@@ -208,7 +213,7 @@ def share_and_tag(ck, proxy, thread_name):
             log.configure(state = "disabled")
 
         
-        def sharee(f, fb_dtsg, proxy, list_content_share, id_post):
+        def sharee(f, fb_dtsg, proxy, list_content_share, id_post, ck):
             try:
                 tags = ",".join(f)
                 content = random.choice(list_content_share)
@@ -219,12 +224,31 @@ def share_and_tag(ck, proxy, thread_name):
 
                 d = f"av={actor_id}&__user={actor_id}&__a=1&__req=3l&__hs=19741.HYP%3Acomet_pkg.2.1..2.1&dpr=1.5&__ccg=EXCELLENT&__rev=1010907637&__s=xg5nhh%3Avxw8eh%3A6k4k0l&__hsi=7325851358205522694&__dyn=7AzHK4HwBgDx-5Q1ryaxG4Qihw9uu2i5U4e2C3-ubyQdwSAx-bwNwnof8boG4E762S1DwUx60xU8k0Z82_CxS320om78bbwto88422y11xmfz822wtU4a3a4oaEnxO0Bo4O2-2l2Utwwg4u0Mo4G1hx-3m1mzXw8W58jwGzEjzFU5e7oqBwJK2W5olwUwgojUlDw-wUwxwhFVovUaU3qxWm2CVEbUGdG1Fwh888cA0z8c84q58jwTwNxe6Uak2-362S269wkopg6C13whEeEfE-VU-4E&__csr=g4xf24psblazi8evsAJh5jcBTYl9kD9lqkB_EB4G-GFtdlKzdQQyy5O4l4nJ5JrcXJ9Sl5x4Ba9XpVuVeVaQV5iV9frAh6Kt94gXqqq-FfG-iBQFWaKqUgKG-VFVJeeiK9hkleB8Q8yFui8AAy9EKF-joDJx6iaVAiiimhpFEG4VEyjDyn-iiUZyXWXVEtyucyElAx68yVax2Ekxi447ECbBCADx2vKvy99pUCFpQez9UjK4UG9xCny9FBoiUK48xGEph8KV8y4Ap4wEyVSUjAwHxG8GK23pp-XyF8rCzqBK6poa9VopwNzrXwDmp2VlwBK5E9KEmxS6Egggx6fyoaokx22mE52Vo4e647Wzokx2fg8RUFa6EabKbDy8kK262O7UmwSxuaxm8yE8DilbGTKmJ7yEliyEnGuGih7IFbz4G8AFKhSEgAAGax28LQcVu5eQqiibzKq8VAHy-UK9BG8wacE38qxF0Vg4qS4k2a4o26gC362m0g-0T8c65EbE4a0zo7O7o43gvy8DDxx0EypA11w9y4U2zwoFeu2h0SwQDF0p84S0R83lw5sw2wE0hF5a3K04xU0Ram0a6w61G0iO2S07oUsw2Gkbw0r1o0SK03uVa4A5e1CwywEw48w4ng13A0l6q0Wo0wy08yw45x6080w4Uwb-0q-3kE2XwWwcy023a04_8Gu0dKw9B6Dggg0J-0Zo2hByUvwsA07xEqwd-0JodE0KAw3OS02jq0Ii0Cw4Uw4Uo6C0kp025VUgweC0M9B9Bhovxa0kS0hl05gDDw6jwaOaw&__comet_req=15&fb_dtsg={fb_dtsg}&jazoest=25336&lsd=QPyerKA9YVXg_kLnBvDEq4&__aaid=0&__spin_r=1010907637&__spin_b=trunk&__spin_t=1705682687&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=ComposerStoryCreateMutation&variables={input_link}&server_timestamps=true&doc_id=7110234585697714"
 
-                a = requests.post("https://www.facebook.com/api/graphql/", headers=h, data=d, proxies=proxy, timeout=20)
+                a = requests.post("https://www.facebook.com/api/graphql/", headers= {"cookie":ck,"Content-Type":"application/x-www-form-urlencoded"}, data=d, proxies=proxy, timeout=20)
                 if ('story_id' in a.text):
                     friends.remove(f)  
-                    log.configure(state = "normal")
-                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Share và tag thành công, còn {sum(len(list_nho) for list_nho in friends)} bạn bè\n\n')
-                    log.configure(state = "disabled")
+                    try:
+                        uuuid_post = a.json()['data']["story_create"]["story_id"]
+                        d = f"av={actor_id}&__user={actor_id}&__a=1&__req=1j&__hs=19746.HYP%3Acomet_pkg.2.1..2.1&dpr=1.5&__ccg=EXCELLENT&__rev=1010986465&__s=dh0x3t%3A2yffwa%3A3wsv3o&__hsi=7327617427903754027&__dyn=7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwkUKewSwAyUco2qwJyE24wJwpUe8hwaG0Z82_CxS320om78bbwto886C11xmfz83WwgEcEhwGxu782lwv89kbxS2218wc61awkovwRwlE-U2exi4UaEW4UmwkUtxGm2SUbElxm1Wxfxmu3W3y2616DBx_wHwfCm2CVEbUGdG1Fwh888cA0z8c84q58jwTwNxe6Uak1xwJwxyo566k1FwgU4q3G1eKufxa&__csr=gbsj3ux5hAj4OlRjMxkjiHbknkxqqh5hkAy8xaEXCExajlPZ4AGh7KrBoGiHGjGjQbBKmiWgghXBVujhaXBFzLVJBxbqy8Kh4Ve9yQcCy9V4mdqz8qxudxmfK68jBxebKaxu4o-4EjAwXoC22i2-6Uy1azqyRwg8fo2Hxp0lFUrwVwyDxSah888mx21KykVo763y7EqwiUbo4OieG1jwmEcorw-wj815E32wrE0-W0n11i0ou1TwEw2io052204e803s28Eig1K408KDwfGbw1l61uwaq0L40cqw7eBw0A-w0zmw18i04eQ06180dko7K03je1v8&__comet_req=15&fb_dtsg={fb_dtsg}&jazoest=25458&lsd=nQkjy28xFrU3RvO3agVdQg&__aaid=0&__spin_r=1010986465&__spin_b=trunk&__spin_t=1706093882&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=CometActivityLogItemCurationMutation&variables=%7B%22input%22%3A%7B%22category_key%22%3A%22ALL%22%2C%22post_id_str%22%3A%22%22%2C%22story_id%22%3A%22{uuuid_post}%22%2C%22story_location%22%3A%22ACTIVITY_LOG%22%2C%22timeline_visibility%22%3A%22HIDE%22%2C%22actor_id%22%3A%22{actor_id}%22%2C%22client_mutation_id%22%3A%223%22%7D%7D&server_timestamps=true&doc_id=6951244711576579"
+
+                        a = requests.post("https://www.facebook.com/api/graphql/", headers= {"cookie":ck,"Content-Type":"application/x-www-form-urlencoded"}, data=d).text
+
+                        if uuuid_post in a:
+                            log.configure(state = "normal")
+                            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn thành công post share có id {uuuid_post}\n\n')
+                            log.configure(state = "disabled")
+                        elif "checkpoint" in a:
+                            log.configure(state = "normal")
+                            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Tài khoản bị checkpoint\n\n')
+                            log.configure(state = "disabled")
+                            except_error
+                        else:
+                            log.configure(state = "normal")
+                            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn không thành công post share có id {uuuid_post}\n\n')
+                            log.configure(state = "disabled")
+                    except Exception as e:
+                        print(e)
+                        print(a.text)
                 elif ("fb_dtsg" in a.text):
                     head = {
                     "cookie":ck,
@@ -246,7 +270,7 @@ def share_and_tag(ck, proxy, thread_name):
                     }
                     get = requests.get("https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw", headers=head, proxies=proxy, timeout=20).text
                     fb_dtsg = get.split('name="fb_dtsg" value="')[1].split('"')[0]
-                    sharee(f, fb_dtsg, proxy, list_content_share, id_post)
+                    sharee(f, fb_dtsg, proxy, list_content_share, id_post, ck)
                 else:
                     log.configure(state = "normal")
                     log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Share và tag không thành công, còn {sum(len(list_nho) for list_nho in friends)} bạn bè\n\n')
@@ -254,35 +278,14 @@ def share_and_tag(ck, proxy, thread_name):
                 time.sleep(3)
             except:
                 time.sleep(3)
-                sharee(f, fb_dtsg, proxy, list_content_share, id_post)
+                sharee(f, fb_dtsg, proxy, list_content_share, id_post, ck)
         threadss = []
         for i in friends:
-                threadss+=[threading.Thread(target=sharee,args=(i,fb_dtsg,proxy,list_content_share, id_post))]
+                threadss+=[threading.Thread(target=sharee,args=(i,fb_dtsg,proxy,list_content_share, id_post, ck))]
         for i in threadss:
             i.start()
         for i in threadss:
             i.join()
-
-        for i in friends:
-            try:
-                aaa = requests.get("https://graph.facebook.com/v18.0/me/posts", params=p, proxies=proxy, timeout=20).json()
-                uuuid_post = aaa["data"][0]["id"]
-                url = f"https://graph.facebook.com/v18.0/{uuuid_post}"
-                response = requests.post(url, params={"access_token":access_token,"timeline_visibility": "hidden"}, proxies=proxy, timeout=20).json()
-
-                if "success" in response:
-                    log.configure(state = "normal")
-                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn thành công post share có id {uuuid_post}\n\n')
-                    log.configure(state = "disabled")
-                else:
-                    print(response)
-                    log.configure(state = "normal")
-                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn không thành công post share có id {uuuid_post}\n\n')
-                    log.configure(state = "disabled")
-            except Exception as e:
-                log.configure(state = "normal")
-                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn không thành công post share\n\n')
-                log.configure(state = "disabled")
     
 
         content = str(random.choice(list_content_edited))
@@ -335,37 +338,37 @@ def share_and_tag(ck, proxy, thread_name):
         input_link = str(urllib.parse.quote(t)).replace("/","%2F") 
 
 
-        d= {
-            'av': actor_id,
-            '__user': actor_id,
-            '__a': '1',
-            '__req': '21',
-            '__hs': '19740.HYP:comet_pkg.2.1..2.1',
-            'dpr': '1.5',
-            '__ccg': 'GOOD',
-            '__rev': '1010882549',
-            '__s': '6r7thh:04zpek:ngta6o',
-            '__hsi': '7325417147562123406',
-            '__dyn': '7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwhUKbgS3q2ibwNwnof8boG0x8bo6u3y4o2Gwfi0LVEtwMw65xO2OU7m221FwgolzUO0-E4a3a4oaEnxO0Bo7O2l2Utwwwi831wiE567Udo5qfK0zEkxe2GewyDwkUtxGm2SUbElxm3y11xfxmu3W3y261eBx_wHwdG7FoarCwLyESE6C14wwwOg2cwMwhEkxe3u364UrwFg662S269wkopg6C13whEeE4WVU-4E',
-            '__csr': 'gbs9N4h7Mz2D95lbsaYIQZchcyIhiSyR8BblW45WmQhkil4ZbH_FbpfF4KA8oCFpbiAGt688qp97iyaZDy5leqrXKhbx6KrBCWQjKiiAA5pbBzVFVoiDzaBKmVFGG4Hi-mGAGegOi7HBwJK9LmUB3bDy9k2bG8x6EWiifxq9GfzFoWUWcxq7UCbxq2W789F8gx6444EjwGxm2qazo6u4FoKm4Ud-1ayEbE5m6E9o5216wNG3i328wEzFoy78kyo4y2m322q04LU1oU21w6nlwaG0W83HG1ig7m0bKw16y01fQw12m00NkE0Euu0peU1c8vCgG4o0DS014JwwyE7e0dTwTwDwEwaC0fVG4EkS0Lk0mR011e0cmg06JO1ewoy120No1SE1NU',
-            '__comet_req': '15',
-            'fb_dtsg': fb_dtsg,
-            'jazoest': '25381',
-            'lsd': 'YS4LJ6N5eDehrxfi1EWHLp',
-            '__aaid': '0',
-            '__spin_r': '1010882549',
-            '__spin_b': 'trunk',
-            '__spin_t': '1705581589',
-            'fb_api_caller_class': 'RelayModern',
-            'fb_api_req_friendly_name': 'cometMisinformationLinkDetectorPluginInternalStateReducerQuery',
-            'variables': '{"input":{"url":"'+url+'"},"scale":1.5}',
-            'server_timestamps': 'true',
-            'doc_id': '6541317025960799',
-        }
+        # d= {
+        #     'av': actor_id,
+        #     '__user': actor_id,
+        #     '__a': '1',
+        #     '__req': '21',
+        #     '__hs': '19740.HYP:comet_pkg.2.1..2.1',
+        #     'dpr': '1.5',
+        #     '__ccg': 'GOOD',
+        #     '__rev': '1010882549',
+        #     '__s': '6r7thh:04zpek:ngta6o',
+        #     '__hsi': '7325417147562123406',
+        #     '__dyn': '7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwhUKbgS3q2ibwNwnof8boG0x8bo6u3y4o2Gwfi0LVEtwMw65xO2OU7m221FwgolzUO0-E4a3a4oaEnxO0Bo7O2l2Utwwwi831wiE567Udo5qfK0zEkxe2GewyDwkUtxGm2SUbElxm3y11xfxmu3W3y261eBx_wHwdG7FoarCwLyESE6C14wwwOg2cwMwhEkxe3u364UrwFg662S269wkopg6C13whEeE4WVU-4E',
+        #     '__csr': 'gbs9N4h7Mz2D95lbsaYIQZchcyIhiSyR8BblW45WmQhkil4ZbH_FbpfF4KA8oCFpbiAGt688qp97iyaZDy5leqrXKhbx6KrBCWQjKiiAA5pbBzVFVoiDzaBKmVFGG4Hi-mGAGegOi7HBwJK9LmUB3bDy9k2bG8x6EWiifxq9GfzFoWUWcxq7UCbxq2W789F8gx6444EjwGxm2qazo6u4FoKm4Ud-1ayEbE5m6E9o5216wNG3i328wEzFoy78kyo4y2m322q04LU1oU21w6nlwaG0W83HG1ig7m0bKw16y01fQw12m00NkE0Euu0peU1c8vCgG4o0DS014JwwyE7e0dTwTwDwEwaC0fVG4EkS0Lk0mR011e0cmg06JO1ewoy120No1SE1NU',
+        #     '__comet_req': '15',
+        #     'fb_dtsg': fb_dtsg,
+        #     'jazoest': '25381',
+        #     'lsd': 'YS4LJ6N5eDehrxfi1EWHLp',
+        #     '__aaid': '0',
+        #     '__spin_r': '1010882549',
+        #     '__spin_b': 'trunk',
+        #     '__spin_t': '1705581589',
+        #     'fb_api_caller_class': 'RelayModern',
+        #     'fb_api_req_friendly_name': 'cometMisinformationLinkDetectorPluginInternalStateReducerQuery',
+        #     'variables': '{"input":{"url":"'+url+'"},"scale":1.5}',
+        #     'server_timestamps': 'true',
+        #     'doc_id': '6541317025960799',
+        # }
 
 
 
-        a = requests.post("https://www.facebook.com/api/graphql", headers=h, data=d, proxies=proxy, timeout=20).text
+        # a = requests.post("https://www.facebook.com/api/graphql", headers=h, data=d, proxies=proxy, timeout=20).text
 
         s = f"av={actor_id}&__user={actor_id}&__a=1&__req=1l&__hs=19741.HYP%3Acomet_pkg.2.1..2.1&dpr=1.5&__ccg=EXCELLENT&__rev=1010904932&__s=llc45t%3A04zpek%3A7sn5lt&__hsi=7325743013655834943&__dyn=7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwhUngS3q2ibwNwnof8boG0x8bo6u3y4o2Gwfi0LVEtwMw65xO2OU7m2210wEwgolzUO0-E4a3a4oaEnxO0Bo7O2l2Utwwwi831wiE567Udo5qfK0zEkxe2GewyDwkUtxGm2SUbElxm3y11xfxmu3W3y261eBx_wHwdG7FoarCwLyESE6C14wwwOg2cwMwhEkxe3u364UrwFg662S269wkopg6C13whEeE4WVU-4E&__csr=gpgu8agzdPgFkRQW4hIG2luJbllkh9uBT8JZFhNqKjkJUyp7AAFJmmRHmWV6uuAYCGmHV29aA8lai-uqHZ4JpkvgJoGEyaz7AVkmWAyepunGVk98vDiyrFeuGZaElhUvGUyECXyUiQaAy8O9UDh8lDx6nFxKaGF9oCiicUOEO5RUKEydyFbHKEKm5oWq1cyoO78a8ymcxC8Ki5UmAAGdzoS5UG4oGu8xu5oF38tybJK3eczGUkzonzoiBx25ouxF1G262B4yU7W2K10zpojyGCggxWifyU7OvwRwABwnEpwWwhEnU3wg1lU22xa0sW09Bwda0Do7gwmKVU567E0Ke0uW0x805Xy0sF01dh0089-03T-z07Bw4LyE3nxi0o90b-04bo15Emw22E1683lw7eEE3LBwcy023a052pA0dRw3B812824y8C3i1kg08wE15E0dbo2v82q0-E0rGmQt2FUaEcJ04QweN03HFE&__comet_req=15&fb_dtsg={fb_dtsg}&jazoest=25310&lsd=YSWSPtxu94I8I5t0XZLwt3&__aaid=0&__spin_r=1010904932&__spin_b=trunk&__spin_t=1705657461&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=ComposerStoryEditMutation&variables={input_link}&server_timestamps=true&doc_id=7396379427067566"
 
@@ -374,13 +377,16 @@ def share_and_tag(ck, proxy, thread_name):
 
         if ("errors" in a)==False:
             log.configure(state = "normal")
-            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa Post thành công\n\n')
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa thành công post có id {id_post}\n\n')
             log.configure(state = "disabled")
         else:
             open("log.txt","a", encoding="utf-8").write("edit"+a.text+"\n")
             log.configure(state = "normal")
-            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa Post không thành công\n\n')
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa không thành công post có id {id_post}\n\n')
             log.configure(state = "disabled")
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Chạy thành công\n\n')
+        log.configure(state = "disabled")
     except Exception as e:
         open("Cookie_error.txt","a", encoding="utf-8").write(ck+"\n")
         traceback.print_exc()
@@ -419,6 +425,12 @@ def get_proxy(api_proxy):
                     log.configure(state = "disabled")
                     time.sleep(10)
                     return get_proxy(api_proxy)
+                elif "not found" in a.text:
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết proxy, thử lại sau 6s\n\n')
+                        log.configure(state = "disabled")
+                        time.sleep(6)
+                        return get_proxy(api_proxy)
                 else:
                     print(a.text)
                     log.configure(state = "normal")
@@ -441,6 +453,12 @@ def get_proxy(api_proxy):
                         log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
                         log.configure(state = "disabled")
                         return aa["data"].get("proxy")
+                    elif "Het proxy, thu lai sau" in a.text:
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết proxy, thử lại sau 6s\n\n')
+                        log.configure(state = "disabled")
+                        time.sleep(6)
+                        return get_proxy(api_proxy)
                     else:
                         print(a.text)
                         log.configure(state = "normal")
@@ -454,10 +472,12 @@ def get_proxy(api_proxy):
                 return "break"
         else:
              return "stop"
-    except:
+    except Exception as e:
+            print(e)
             log.configure(state = "normal")
             log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy không thành công\n\n')
             log.configure(state = "disabled")
+            time.sleep(6)
             return get_proxy(api_proxy)
     
 running = True
@@ -479,13 +499,14 @@ def start():
         list_link = list_link[:len(list_link)-1]
 
         def run():
+            global running
             for i in range(0,len(list_cookie),int(luong.get())):
                 if running ==True:
                     threads=[]
                     aaa = list_cookie[i:i+int(luong.get())]
                     p = get_proxy(api_proxy)
                     print(p)
-                    if p!="break":
+                    if p!="break" and p!="stop":
                         for i in range(len(aaa)):
                             c = aaa[i]
                             thread_name = f"Thread {i+1}"
@@ -495,16 +516,15 @@ def start():
                         for i in threads:
                             i.join(int(end_luong.get()))
                     elif p =="stop":
+                        running =True
                         break
                     else:
                         log.configure(state = "normal")
-                        log.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-                        log.insert(customtkinter.END, f'Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
                         log.configure(state = "disabled")
                         break
             log.configure(state = "normal")
-            log.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-            log.insert(customtkinter.END, f'Hoàn thành nhiệm vụ cho list cookie\n\n')
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hoàn thành nhiệm vụ cho list cookie\n\n')
             log.configure(state = "disabled")
         
         t = threading.Thread(target=run)
