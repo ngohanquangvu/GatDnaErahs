@@ -68,7 +68,7 @@ def share_and_tag(ck, proxy, thread_name):
         log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Tiến hành lấy token\n\n')
         log.configure(state = "disabled")
         dem = 0
-        while running:
+        while True:
             try:
                 head = {
                     "cookie":ck,
@@ -121,7 +121,8 @@ def share_and_tag(ck, proxy, thread_name):
                     log.configure(state = "normal")
                     log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Cookie bị lỗi, không lấy được token\n\n')
                     log.configure(state = "disabled")
-                    running = False
+                    open("Cookie_error.txt", "a", encoding="utf-8").write(ck+"\n")
+                    except_error()
                 break
             except Exception as e:
                 traceback.print_exc()
@@ -142,8 +143,7 @@ def share_and_tag(ck, proxy, thread_name):
                     dem = 0
                     print(proxy)
                 time.sleep(5)
-        if running == False:
-            except_error()
+
         log.configure(state = "normal")
         log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Lấy token thành công\n\n')
         log.configure(state = "disabled")
@@ -173,11 +173,19 @@ def share_and_tag(ck, proxy, thread_name):
         while url:
             try:
                 response = requests.get(url, params=payload,proxies=proxy, timeout=20)
+                if "Có vẻ như bạn đang dùng nhầm tính năng này do sử dụng quá nhanh. Bạn tạm thời đã bị chặn sử dụng nó" in response.text:
+                    proxy = get_proxy(api_proxy)
+                    proxy = {
+                        "http":f"http://{proxy}",
+                        "https":f"http://{proxy}"
 
-                data = response.json()
-                friends.extend(f'"{i.get("id")}"' for i in data["data"])
+                    }
+                    url = "https://graph.facebook.com/v18.0/me/friends"
+                else:
+                    data = response.json()
+                    friends.extend(f'"{i.get("id")}"' for i in data["data"])
 
-                url = "https://graph.facebook.com/v18.0/me/friends?after="+data["paging"].get("cursors").get("after")
+                    url = "https://graph.facebook.com/v18.0/me/friends?after="+data["paging"].get("cursors").get("after")
 
             except:
                 break
@@ -186,6 +194,8 @@ def share_and_tag(ck, proxy, thread_name):
         log.configure(state = "disabled")
         if len(friends)>=99:
             friends = list(chia_list(friends, 99))
+        elif len(friends)==0:
+            open("Cookie_error.txt", "a", encoding="utf-8").write(ck+"\n")
         else:
             temp = friends
             friends = []
