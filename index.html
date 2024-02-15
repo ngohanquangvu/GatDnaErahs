@@ -1,257 +1,689 @@
 app = customtkinter.CTk()
-app.title("SPAM MAIL")
-app.geometry("450x530")
+app.title("SHARE AND TAG")
+app.geometry("1100x700")
+app.rowconfigure (0, weight=1)
+app.columnconfigure (0, weight=1)
 
-file_sender = []
-list_key_proxy = []
-file_receiver = []
-content = ""
-file_attach = ""
-
-
-def set_up_proxy(proxy):
-    os.system(f'''reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyServer /t REG_SZ /d {proxy} /f
-taskkill /f /im SystemSettings.exe && start ms-settings:network-proxy
-taskkill /f /im SystemSettings.exe''')
-    frame_text_box.configure(state = "normal")
-    frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-    frame_text_box.insert(customtkinter.END, f'Thiết lập proxy {proxy} thành công\n\n')
-    frame_text_box.configure(state = "disabled")
-
-def turn_on():
-    os.system('''reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f
-taskkill /f /im SystemSettings.exe && start ms-settings:network-proxy
-taskkill /f /im SystemSettings.exe''')
-    
-def clear_proxy():
-    os.system('''reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f
-reg delete "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyServer /f
-reg delete "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyOverride /f
-taskkill /f /im SystemSettings.exe && start ms-settings:network-proxy
-taskkill /f /im SystemSettings.exe''')
-
-def contents():
-    global content
-    file_content = filedialog.askopenfilename(title="Chọn file Template")
-    if file_content!="":
-        frame_text_box.configure(state = "normal")
-        content = open(file_content,errors="replace", encoding="utf-8").read()
-        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-        frame_text_box.insert(customtkinter.END, f'Nhập thành công file Template: {file_content}\n\n')
-        frame_text_box.configure(state = "disabled")
-
-def open_uid():
-    global file_sender
-    file_sound = filedialog.askopenfilename(title="Chọn file mail gửi")
-    if file_sound!="":
-        frame_text_box.configure(state = "normal")
-        list_uid = open(file_sound, "r", encoding="utf-8").readlines()
-        file_sender = [line.strip("\n") for line in list_uid]
-        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-        frame_text_box.insert(customtkinter.END, f'Nhập thành công {len(file_sender)} sender \n\n')
-        frame_text_box.configure(state = "disabled")
-
-def open_proxy_key():
-    global list_key_proxy
-    file_sound = filedialog.askopenfilename(title="Chọn file key proxy")
-    if file_sound!="":
-        frame_text_box.configure(state = "normal")
-        list_uid = open(file_sound, "r", encoding="utf-8").readlines()
-        list_key_proxy = [line.strip("\n") for line in list_uid]
-        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-        frame_text_box.insert(customtkinter.END, f'Nhập thành công {len(list_key_proxy)} sender \n\n')
-        frame_text_box.configure(state = "disabled")
+def check_status():
+    global api_proxy, options
+    d=0
+    if cookie_textbox.get("0.0", customtkinter.END)=="\n":
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Cookie không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    if link_edited.get("0.0", customtkinter.END)=="\n":
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Link không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    if luong.get()=="":
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Luồng không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    if end_luong.get()=="":
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Thread timeout không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    if api_proxy in options == False:
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Api proxy không hợp lệ\n\n')
+        log.configure(state = "disabled")
+        d+=1
+    elif api_proxy==None:
+        if proxy_textbox.get("0.0", customtkinter.END)=="\n":
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Proxy không hợp lệ\n\n')
+            log.configure(state = "disabled")
+            d+=1
+    if d==0:
+        return True
+    else:
+        return False
 
 
-def get_proxy():
-    global list_key_proxy
+def share_and_tag(ck, proxy, thread_name):
+    global api_proxy, list_key, list_content, list_content_edited, list_link, list_content_share, api_proxy, running
     try:
-        if len(list_key_proxy)>0:
-                k = random.choice(list_key_proxy)
-                a = requests.get(f"http://proxy.shoplike.vn/Api/getNewProxy?access_token={k}")
+        if proxy!=None:
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sử dụng proxy {proxy}\n\n')
+            log.configure(state = "disabled")
+            proxy = {
+                "http":f"http://{proxy}",
+                "https":f"http://{proxy}"
+
+            }
+            print(proxy)
+        else:
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Không sử dụng proxy\n\n')
+            log.configure(state = "disabled")
+        def chia_list(large_list, chunk_size):
+            for i in range(0, len(large_list), chunk_size):
+                yield large_list[i:i + chunk_size]
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Tiến hành lấy token\n\n')
+        log.configure(state = "disabled")
+        dem = 0
+        while True:
+            try:
+                head = {
+                    "cookie":ck,
+                    "Host":"m.facebook.com",
+                    "cache-control":"max-age=0",
+                    "upgrade-insecure-requests":"1",
+                    "origin":"https://mbasic.facebook.com",
+                    "content-type":"application/x-www-form-urlencoded",
+                    "user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+                    "accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                    "x-requested-with":"mark.via.gp",
+                    "sec-fetch-site":"same-origin",
+                    "sec-fetch-mode":"navigate",
+                    "sec-fetch-user":"?1",
+                    "sec-fetch-dest":"document",
+                    "referer":"https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw",
+                    "accept-encoding":"gzip, deflate",
+                    "accept-language":"vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+                    }
+                get = requests.get("https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw", headers=head, proxies=proxy, timeout=20).text
+                fb_dtsg = get.split('name="fb_dtsg" value="')[1].split('"')[0]
+                scope = get.split('name="scope" value="')[1].split('"')[0]
+                logger_id = get.split('name="logger_id" value="')[1].split('"')[0]
+                encrypted_post_body = get.split('name="encrypted_post_body" value="')[1].split('"')[0]
+                data = {
+                "cookie":ck,
+                "fb_dtsg": fb_dtsg,
+                "jazoest":"25480",
+                "scope":scope,
+                "display":"touch",
+                "sdk":"",
+                "sdk_version":"",
+                "domain":"",
+                "sso_device":"ios",
+                "state":"",
+                "user_code":"",
+                "nonce":"",
+                "logger_id":logger_id,
+                "auth_type":"",
+                "auth_nonce":"",
+                "code_challenge":"",
+                "code_challenge_method":"",
+                "encrypted_post_body":encrypted_post_body,
+                "return_format[]":"access_token"
+                }
+                get = requests.post("https://m.facebook.com/dialog/oauth/skip/submit/?paipv=0&eav=Afa2uLWDW0GTp9dR1Q9kn2mF90FWnFS6bk2nYDeGhRY_vS_DZOkGVLsNRVEQUHAp9VU", headers=head, data=data, proxies=proxy, timeout=20).text
                 try:
-                    frame_text_box.configure(state = "normal")
-                    frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-                    frame_text_box.insert(customtkinter.END, f'Lấy proxy thành công\n\n')
-                    frame_text_box.configure(state = "disabled")
-                    return a.json()["data"].get("proxy")
+                    access_token = get.split("#access_token=")[1].split("&")[0]
                 except:
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Cookie bị lỗi, không lấy được token\n\n')
+                    log.configure(state = "disabled")
+                    open("Cookie_error.txt", "a", encoding="utf-8").write(ck+"\n")
+                    except_error()
+                break
+            except Exception as e:
+                traceback.print_exc()
+                log.configure(state = "normal")
+                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Xảy ra lỗi {e}, tiến hành lấy lại token\n\n')
+                log.configure(state = "disabled")
+                dem +=1
+                if dem>=5:
+                    proxy = get_proxy(api_proxy)
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sử dụng proxy {proxy}\n\n')
+                    log.configure(state = "disabled")
+                    proxy = {
+                        "http":f"http://{proxy}",
+                        "https":f"http://{proxy}"
+
+                    }
+                    dem = 0
+                    print(proxy)
+                time.sleep(5)
+
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Lấy token thành công\n\n')
+        log.configure(state = "disabled")
+        payload = {
+            "access_token": access_token
+                }
+
+        url = "https://graph.facebook.com/v18.0/me/?fields=id"
+        print(access_token)
+
+        actor_id = requests.get(url, params=payload, proxies=proxy, timeout=20).json()
+        print(actor_id)
+        actor_id = actor_id['id']
+        
+        friends = []
+
+        payload = {
+            "access_token": access_token
+        }
+
+        url = "https://graph.facebook.com/v18.0/me/friends"
+
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Đang tiến hành lấy bạn bè\n\n')
+        log.configure(state = "disabled")
+
+        while url:
+            try:
+                response = requests.get(url, params=payload,proxies=proxy, timeout=20)
+                if "Có vẻ như bạn đang dùng nhầm tính năng này do sử dụng quá nhanh. Bạn tạm thời đã bị chặn sử dụng nó" in response.text:
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Token bị block tính năng\n\n')
+                    log.configure(state = "disabled")
+                else:
+                    data = response.json()
+                    friends.extend(f'"{i.get("id")}"' for i in data["data"])
+
+                    url = "https://graph.facebook.com/v18.0/me/friends?after="+data["paging"].get("cursors").get("after")
+
+            except:
+                break
+        if len(friends)>=99:
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Lấy bạn bè thành công\n\n')
+            log.configure(state = "disabled")
+            friends = list(chia_list(friends, 99))
+        elif len(friends)==0:
+            open("Cookie_error.txt", "a", encoding="utf-8").write(ck+"\n")
+            except_error()
+        else:
+            temp = friends
+            friends = []
+            friends.append(temp)
+        print(friends)
+        content = urllib.parse.quote(random.choice(list_content))
+        d = f"av={actor_id}&__user={actor_id}&__a=1&__req=1c&__hs=19741.HYP%3Acomet_pkg.2.1..2.1&dpr=1.5&__ccg=EXCELLENT&__rev=1010906670&__s=nfsupy%3A3gu0g9%3A509jpi&__hsi=7325801710042635092&__dyn=7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwhUKbgS3q2ibwNwnof8boG0x8bo6u3y4o2Gwfi0LVEtwMw65xO2OU7m2210wEwgolzUO0-E4a3a4oaEnxO0Bo7O2l2Utwwwi831wiE567Udo5qfK0zEkxe2GewyDwkUtxGm2SUbElxm3y11xfxmu3W3y261eBx_wHwdG7FoarCwLyESE6C14wwwOg2cwMwhEkxe3u364UrwFg662S269wkopg6C13whEeE4WVU-4E&__csr=gog_17ewgNG5YAj7i8ZFOEhOkH8myFhdFHbNlkybQbAbqkyLXVp-AqXWigyt3lj8QFsz8gF6ArAgjKhyFaXmbz6AXZAAhUyXGUGdJ24h6_ixmaAGh6DZfACAgS9xiUKQ-c_AACzA8KEnG9K4vDxa5puemmUS9gOXgmCBBy8SjAzEDKiECmUyufwFyogUjx65omwwCwQx6exe9J0CyoiBGFUgG2e5EGaK54u8DAy8sQ2e5FonyVEizoiQ68-5E9U8UcoWfByo2fx61czKEWK48mwJK4pUap8uzU5W68jwywIwDwYxK1ew820pW2SmEmw8q1aw2HUcEJ3oG0Xo2WwgUtwd_wwwrGwj81g8C0lK0tW07rA01j9w0ABAw0tAo0dBU15Q0gV05hCweC04aU11ohw2081e82_w6LwRa0KUeE38w0wOw1fOaDw1MK0Zo2hByUvw0zRweO03hG0Ii0Cw4Uw1Iypipkm7Uiw5dw4lg0Li0H8G&__comet_req=15&fb_dtsg={fb_dtsg}&jazoest=25186&lsd=YtW8WvQmfUnwqztnpKrDO0&__aaid=0&__spin_r=1010906670&__spin_b=trunk&__spin_t=1705671127&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=ComposerStoryCreateMutation&variables=%7B%22input%22%3A%7B%22composer_entry_point%22%3A%22inline_composer%22%2C%22composer_source_surface%22%3A%22timeline%22%2C%22idempotence_token%22%3A%22{uuid.uuid4()}_FEED%22%2C%22source%22%3A%22WWW%22%2C%22attachments%22%3A%5B%5D%2C%22audience%22%3A%7B%22privacy%22%3A%7B%22allow%22%3A%5B%5D%2C%22base_state%22%3A%22EVERYONE%22%2C%22deny%22%3A%5B%5D%2C%22tag_expansion_state%22%3A%22UNSPECIFIED%22%7D%7D%2C%22message%22%3A%7B%22ranges%22%3A%5B%5D%2C%22text%22%3A%22{content}%22%7D%2C%22with_tags_ids%22%3Anull%2C%22inline_activities%22%3A%5B%5D%2C%22explicit_place_id%22%3A%220%22%2C%22text_format_preset_id%22%3A%220%22%2C%22logging%22%3A%7B%22composer_session_id%22%3A%22{uuid.uuid4()}%22%7D%2C%22navigation_data%22%3A%7B%22attribution_id_v2%22%3A%22ProfileCometTimelineListViewRoot.react%2Ccomet.profile.timeline.list%2Cvia_cold_start%2C1705671127051%2C396556%2C190055527696468%2C%2C%22%7D%2C%22tracking%22%3A%5Bnull%5D%2C%22event_share_metadata%22%3A%7B%22surface%22%3A%22newsfeed%22%7D%2C%22actor_id%22%3A%22{actor_id}%22%2C%22client_mutation_id%22%3A%221%22%7D%2C%22displayCommentsFeedbackContext%22%3Anull%2C%22displayCommentsContextEnableComment%22%3Anull%2C%22displayCommentsContextIsAdPreview%22%3Anull%2C%22displayCommentsContextIsAggregatedShare%22%3Anull%2C%22displayCommentsContextIsStorySet%22%3Anull%2C%22feedLocation%22%3A%22TIMELINE%22%2C%22feedbackSource%22%3A0%2C%22focusCommentID%22%3Anull%2C%22gridMediaWidth%22%3A230%2C%22groupID%22%3Anull%2C%22scale%22%3A1.5%2C%22privacySelectorRenderLocation%22%3A%22COMET_STREAM%22%2C%22checkPhotosToReelsUpsellEligibility%22%3Atrue%2C%22renderLocation%22%3A%22timeline%22%2C%22useDefaultActor%22%3Afalse%2C%22inviteShortLinkKey%22%3Anull%2C%22isFeed%22%3Afalse%2C%22isFundraiser%22%3Afalse%2C%22isFunFactPost%22%3Afalse%2C%22isGroup%22%3Afalse%2C%22isEvent%22%3Afalse%2C%22isTimeline%22%3Atrue%2C%22isSocialLearning%22%3Afalse%2C%22isPageNewsFeed%22%3Afalse%2C%22isProfileReviews%22%3Afalse%2C%22isWorkSharedDraft%22%3Afalse%2C%22UFI2CommentsProvider_commentsKey%22%3A%22ProfileCometTimelineRoute%22%2C%22hashtag%22%3Anull%2C%22canUserManageOffers%22%3Afalse%2C%22__relay_internal__pv__CometUFIIsRTAEnabledrelayprovider%22%3Afalse%2C%22__relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider%22%3Afalse%2C%22__relay_internal__pv__IsWorkUserrelayprovider%22%3Afalse%2C%22__relay_internal__pv__IsMergQAPollsrelayprovider%22%3Afalse%2C%22__relay_internal__pv__StoriesArmadilloReplyEnabledrelayprovider%22%3Afalse%2C%22__relay_internal__pv__StoriesRingrelayprovider%22%3Afalse%7D&server_timestamps=true&doc_id=7110234585697714"
+        
+        h={
+            "cookie":ck,
+            "Content-Type":"application/x-www-form-urlencoded"
+        }
+
+        a = requests.post("https://www.facebook.com/api/graphql/", headers=h, data=d, proxies=proxy, timeout=20)
+
+
+        try:
+            story_id = a.json()['data']['story_create']['story']['id']
+            id_post = a.json()['data']['story_create']['timeline_feed_units_edge']['node']['post_id']
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Đăng thành công, id post là {id_post}\n\n')
+            log.configure(state = "disabled")
+            p={
+            "access_token":access_token,
+            "timeline_visibility": "hidden"
+            }
+            url = f"https://graph.facebook.com/v18.0/{actor_id}_{id_post}"
+            response = requests.post(url, params=p, proxies=proxy, timeout=20).json()
+
+            if "success" in response:
+                log.configure(state = "normal")
+                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn thành công post có id {id_post}\n\n')
+                log.configure(state = "disabled")
+            else:
+                print(response)
+                log.configure(state = "normal")
+                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn không thành công post có id {id_post}\n\n')
+                log.configure(state = "disabled")
+        except:
+            open("log.txt","a", encoding="utf-8").write("post"+a.text+"\n")
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}:Đăng không thành công\n\n')
+            log.configure(state = "disabled")
+
+        
+        def sharee(f, fb_dtsg, proxy, list_content_share, id_post, ck):
+            try:
+                tags = ",".join(f)
+                content = random.choice(list_content_share)
+                t = r'{"input":{"composer_entry_point":"share_modal","composer_source_surface":"feed_story","composer_type":"share","idempotence_token":"'+str(uuid.uuid4())+r'_FEED","source":"WWW","is_tracking_encrypted":true,"tracking":["AZXRHyzzOjSaZJPV-AYf__z_U4K_N2AK6zzXqyAqxK-_4dNgoVZdEoC6pL5tWyU5uHNYisEMpQd8S2BbKvq671SeGFoIoKwY0BJjnCvdGAfXxl6s4YobPoh2OwbO3NNFDs91YyTVsaLz16LdBh6Tz5rIgVNtyqjY3JyOzLOwf_weUgDFmLtF6wLdIBblloz2vUiTxW61oqF_m2NEIQYm4BNm_zX6An-yjATw1vMo4d_Pr1o2EWGDS1v37fn7DarEialSIJ41z1kyav8Ng_XEERQcfZ1A2FBxs0bnRWs9jz3-13X_R44ui9B5hvM9xmrf51fZrFF9nlPe-HKnjBe9EduZUZgI6ZGpKqTsQhxoyIZ-8fDRnSKvAMMttnnlPGqK0kr8u-WD_3w4nREcFLzuNViGPgY3F586MuhCo2kxxN35qsa6xdgInJyQhjjOgnUVFm1sRxUoNWPJpG6sQayWPKrga3IpfQdskZNW1oFhBOWMDP04vvOnTgGaN0wjDXibkkn3T2LJkeJaejSXoH0xNxkt1j_PChCE8tbty23jZO96Fwv1jfIqrzA-_h_iPPYD808gSP1bz4hQJKT5DzPROM3h2dmcmJOmJRbd4l8w_0zWD95D_bdL331KDy1g-sgZtSU5pZ3my54lf0YQAtXO1IJYP1mxNfpH3HpTDlsD9hUEqCfZwfi_LZxthKuOXavaaqM72THij0X-_Y8U7z2x5N3N0ss-MpzX3useF3THgo9uoeQinwvViopoPkUxm68OAPGasdACK04HsTOePKTI8iKH3hBhepF8mJwcofsu18ll-b8fPH9nsfIveAnEBD9u3hTQgoxvNRciffUl9wA_tr276mM8UEvjM9YBNz1VclnBCiUVH1AviXe2RHCGO4zXf-Q04b9QadcwN56pAXwowDusrvoMh9ooi6ARNJM0DvnjEP8MVn1UEeD9G0jUGrupqUrsNBSPAFqjBGVQmhrgQg9KwrO0oD2hnEtNyi9xDDQLGX1zjFTICtmRv7R_kLkEW6qg4BVBFnIy0wD4_TYBqg3EgclkQEUVGy2iNJ9ogYCxEZzrpJc07nbdyRum1IH4RujiFCBzhYp9T5smM8TcWDwzTesWYbhpC3xhuAf7HR7UwNdnHnJ5vwzFmhCPTUcbH8YeYoEteC3_IrCLzrVWw9bfDhN7CdZP1nd_KIExDD_eaLDnPQi_i5Ni9ns7u6F6c7YekIdOkDPIKp5H12ztGszydAxKtCGpG9iHoF_BwJDZ8BdH2cNyBpqSWVa8RjUvUHShWAiMUhxtoT4nVGacgbse7Sil6og1OYOqX4dAeknrw8OMaB3TinDqlL1xGUIATj9xLEZetqo09E8Z0rZlMPwavG4u03v4UwidOH_kINIJi3rN1cED7RC_44RP4MrAD7CXkDIPq5wjokBLh3pjT5VP3r1ZzNLfqXziiGT_nsItBX2lSsqKCg0pYMHjW_Ghl62ISPnUc2mjKIHrjKW91ObTqC7R1uUfxi4ciASECLN5EzmclQG4Q73uEdH7oMYxkVE",null],"audience":{"privacy":{"allow":[],"base_state":"EVERYONE","deny":[],"tag_expansion_state":"UNSPECIFIED"}},"message":{"ranges":[],"text":"'+content+r'"},"inline_activities":[],"text_format_preset_id":"0","attachments":[{"link":{"share_scrape_data":"{\"share_type\":22,\"share_params\":['+id_post+r']}"}}],"with_tags_ids":['+tags+r'],"logging":{"composer_session_id":"'+str(uuid.uuid4())+r'"},"navigation_data":{"attribution_id_v2":"ProfileCometContextualProfileRoot.react,comet.profile.contextual_profile,unexpected,1705683508095,55072,,,;CometPhotoRoot.react,comet.mediaviewer.photo,unexpected,1705683497241,814714,,304#10#82,;ProfileCometTimelineListViewRoot.react,comet.profile.timeline.list,unexpected,1705683448219,988418,190055527696468,12#15#340#301,;CometGroupPermalinkRoot.react,comet.group.permalink,unexpected,1705683391206,449156,2361831622,,;CometPhotoRoot.react,comet.mediaviewer.photo,unexpected,1705683387474,543007,,229#82,;ProfileCometTimelineListViewRoot.react,comet.profile.timeline.list,via_cold_start,1705682687332,563868,190055527696468,12#15#340#301,"},"event_share_metadata":{"surface":"newsfeed"},"actor_id":"'+actor_id+r'","client_mutation_id":"5"},"displayCommentsFeedbackContext":null,"displayCommentsContextEnableComment":null,"displayCommentsContextIsAdPreview":null,"displayCommentsContextIsAggregatedShare":null,"displayCommentsContextIsStorySet":null,"feedLocation":"NEWSFEED","feedbackSource":1,"focusCommentID":null,"gridMediaWidth":null,"groupID":null,"scale":1.5,"privacySelectorRenderLocation":"COMET_STREAM","checkPhotosToReelsUpsellEligibility":true,"renderLocation":"homepage_stream","useDefaultActor":false,"inviteShortLinkKey":null,"isFeed":true,"isFundraiser":false,"isFunFactPost":false,"isGroup":false,"isEvent":false,"isTimeline":false,"isSocialLearning":false,"isPageNewsFeed":false,"isProfileReviews":false,"isWorkSharedDraft":false,"UFI2CommentsProvider_commentsKey":"CometModernHomeFeedQuery","hashtag":null,"canUserManageOffers":false,"__relay_internal__pv__CometUFIIsRTAEnabledrelayprovider":false,"__relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider":false,"__relay_internal__pv__IsWorkUserrelayprovider":false,"__relay_internal__pv__IsMergQAPollsrelayprovider":false,"__relay_internal__pv__StoriesArmadilloReplyEnabledrelayprovider":false,"__relay_internal__pv__StoriesRingrelayprovider":false}'
+
+                t = urllib.parse.quote(t)
+                input_link=(t.replace("\n","\\n"))    
+
+                d = f"av={actor_id}&__user={actor_id}&__a=1&__req=3l&__hs=19741.HYP%3Acomet_pkg.2.1..2.1&dpr=1.5&__ccg=EXCELLENT&__rev=1010907637&__s=xg5nhh%3Avxw8eh%3A6k4k0l&__hsi=7325851358205522694&__dyn=7AzHK4HwBgDx-5Q1ryaxG4Qihw9uu2i5U4e2C3-ubyQdwSAx-bwNwnof8boG4E762S1DwUx60xU8k0Z82_CxS320om78bbwto88422y11xmfz822wtU4a3a4oaEnxO0Bo4O2-2l2Utwwg4u0Mo4G1hx-3m1mzXw8W58jwGzEjzFU5e7oqBwJK2W5olwUwgojUlDw-wUwxwhFVovUaU3qxWm2CVEbUGdG1Fwh888cA0z8c84q58jwTwNxe6Uak2-362S269wkopg6C13whEeEfE-VU-4E&__csr=g4xf24psblazi8evsAJh5jcBTYl9kD9lqkB_EB4G-GFtdlKzdQQyy5O4l4nJ5JrcXJ9Sl5x4Ba9XpVuVeVaQV5iV9frAh6Kt94gXqqq-FfG-iBQFWaKqUgKG-VFVJeeiK9hkleB8Q8yFui8AAy9EKF-joDJx6iaVAiiimhpFEG4VEyjDyn-iiUZyXWXVEtyucyElAx68yVax2Ekxi447ECbBCADx2vKvy99pUCFpQez9UjK4UG9xCny9FBoiUK48xGEph8KV8y4Ap4wEyVSUjAwHxG8GK23pp-XyF8rCzqBK6poa9VopwNzrXwDmp2VlwBK5E9KEmxS6Egggx6fyoaokx22mE52Vo4e647Wzokx2fg8RUFa6EabKbDy8kK262O7UmwSxuaxm8yE8DilbGTKmJ7yEliyEnGuGih7IFbz4G8AFKhSEgAAGax28LQcVu5eQqiibzKq8VAHy-UK9BG8wacE38qxF0Vg4qS4k2a4o26gC362m0g-0T8c65EbE4a0zo7O7o43gvy8DDxx0EypA11w9y4U2zwoFeu2h0SwQDF0p84S0R83lw5sw2wE0hF5a3K04xU0Ram0a6w61G0iO2S07oUsw2Gkbw0r1o0SK03uVa4A5e1CwywEw48w4ng13A0l6q0Wo0wy08yw45x6080w4Uwb-0q-3kE2XwWwcy023a04_8Gu0dKw9B6Dggg0J-0Zo2hByUvwsA07xEqwd-0JodE0KAw3OS02jq0Ii0Cw4Uw4Uo6C0kp025VUgweC0M9B9Bhovxa0kS0hl05gDDw6jwaOaw&__comet_req=15&fb_dtsg={fb_dtsg}&jazoest=25336&lsd=QPyerKA9YVXg_kLnBvDEq4&__aaid=0&__spin_r=1010907637&__spin_b=trunk&__spin_t=1705682687&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=ComposerStoryCreateMutation&variables={input_link}&server_timestamps=true&doc_id=7110234585697714"
+
+                a = requests.post("https://www.facebook.com/api/graphql/", headers= {"cookie":ck,"Content-Type":"application/x-www-form-urlencoded"}, data=d, proxies=proxy, timeout=20)
+                if ('data' in a.text) and ("story_create" in a.text) and ("story_id" in a.text):
+                    friends.remove(f)  
+                    try:
+                        uuuid_post = a.json()['data']["story_create"]["story_id"]
+                        d = f"av={actor_id}&__user={actor_id}&__a=1&__req=1j&__hs=19746.HYP%3Acomet_pkg.2.1..2.1&dpr=1.5&__ccg=EXCELLENT&__rev=1010986465&__s=dh0x3t%3A2yffwa%3A3wsv3o&__hsi=7327617427903754027&__dyn=7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwkUKewSwAyUco2qwJyE24wJwpUe8hwaG0Z82_CxS320om78bbwto886C11xmfz83WwgEcEhwGxu782lwv89kbxS2218wc61awkovwRwlE-U2exi4UaEW4UmwkUtxGm2SUbElxm1Wxfxmu3W3y2616DBx_wHwfCm2CVEbUGdG1Fwh888cA0z8c84q58jwTwNxe6Uak1xwJwxyo566k1FwgU4q3G1eKufxa&__csr=gbsj3ux5hAj4OlRjMxkjiHbknkxqqh5hkAy8xaEXCExajlPZ4AGh7KrBoGiHGjGjQbBKmiWgghXBVujhaXBFzLVJBxbqy8Kh4Ve9yQcCy9V4mdqz8qxudxmfK68jBxebKaxu4o-4EjAwXoC22i2-6Uy1azqyRwg8fo2Hxp0lFUrwVwyDxSah888mx21KykVo763y7EqwiUbo4OieG1jwmEcorw-wj815E32wrE0-W0n11i0ou1TwEw2io052204e803s28Eig1K408KDwfGbw1l61uwaq0L40cqw7eBw0A-w0zmw18i04eQ06180dko7K03je1v8&__comet_req=15&fb_dtsg={fb_dtsg}&jazoest=25458&lsd=nQkjy28xFrU3RvO3agVdQg&__aaid=0&__spin_r=1010986465&__spin_b=trunk&__spin_t=1706093882&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=CometActivityLogItemCurationMutation&variables=%7B%22input%22%3A%7B%22category_key%22%3A%22ALL%22%2C%22post_id_str%22%3A%22%22%2C%22story_id%22%3A%22{uuuid_post}%22%2C%22story_location%22%3A%22ACTIVITY_LOG%22%2C%22timeline_visibility%22%3A%22HIDE%22%2C%22actor_id%22%3A%22{actor_id}%22%2C%22client_mutation_id%22%3A%223%22%7D%7D&server_timestamps=true&doc_id=6951244711576579"
+
+                        a = requests.post("https://www.facebook.com/api/graphql/", headers= {"cookie":ck,"Content-Type":"application/x-www-form-urlencoded"}, data=d).text
+
+                        if uuuid_post in a:
+                            pass
+                            # log.configure(state = "normal")
+                            # log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Ẩn thành công post share có id {uuuid_post}\n\n')
+                            # log.configure(state = "disabled")
+                        elif "checkpoint" in a:
+                            log.configure(state = "normal")
+                            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Tài khoản bị checkpoint\n\n')
+                            log.configure(state = "disabled")
+                            except_error
+                        else:
+                            pass
+                    except Exception as e:
+                        print(e)
+                        print(a.text)
+                elif ("fb_dtsg" in a.text):
+                    head = {
+                    "cookie":ck,
+                    "Host":"m.facebook.com",
+                    "cache-control":"max-age=0",
+                    "upgrade-insecure-requests":"1",
+                    "origin":"https://mbasic.facebook.com",
+                    "content-type":"application/x-www-form-urlencoded",
+                    "user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+                    "accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                    "x-requested-with":"mark.via.gp",
+                    "sec-fetch-site":"same-origin",
+                    "sec-fetch-mode":"navigate",
+                    "sec-fetch-user":"?1",
+                    "sec-fetch-dest":"document",
+                    "referer":"https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw",
+                    "accept-encoding":"gzip, deflate",
+                    "accept-language":"vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+                    }
+                    get = requests.get("https://mbasic.facebook.com/dialog/oauth?encrypted_query_string=AeC8BVQ7ctjgpS9OzeGcgZu8VAHuuYRJlLKyB5NEYWlKsjPkU7BA5r0pbsXZLqw7Nlde8AWnp3Sa1XIq20qnPoHpzNEgb4qLpydMqy6CixrSTHOGiMs1-5_3j9tIeUcCV7vBUm1y_IQjy1dmjzrWzmAhtgz7scvu2CFVtSD1irg8j_73c8N4Bvpr9KxEmPgyHAcZMhhZ6zkw8Sl64BXgD1Gn8n3kPuSjQWRdCpBjqJbZyHkJuuI_fUeWrYNc6QdkdZPos3MkYQlUuEoZhFnXH7s_OytvqmIbLSHBpoPRXLSmv3UX6LNfWZp7pv0ZoOQ8v3opxbOuse0J-LvThFlu-i4mGKHHqA9TdCq2TLcAAAQzOcASfjFbs_H4E66168gYBHylPtHjsjAzUAo1ILy5p5TQvbZxrk4kpdOjhOoKj-pmOASDwXS6VH7Isup9j4eW1lAjDg-V2zo60W7Woi-HqPeliE5BiEib7lp7PBC0njUNZP8TXTD2XWUMgyO2wpHk5GYd1x1J1fSEzRzvfvQ4b8pz6f9qRfN1wXJk6Ls9wJBStJQViipbU3QGoo9v2LwuCNM9k4NHtv-1o7kPqXX0v5Vuuwbx6tN112i9_zJVbr7NafaatOR0cPt0k09wfvXdcOWOdBeAho28-aqGrwrZhga80JYJ5u5Jwxoajquxb8kEDdUjO8STzMv_9dDNUMSFyxuE-KKHdaYbnQB2AGHYQF_TkOL6Ck545wft9_dG0lMv9-XY4TOmlymzIGAG_Mt0wXM4G4wHuJ6uGzH3B0sOs0e2aVyk-Wzf14eZMs0vLIBdGyrSyt04BFupFMFAMu3WpMNJJhg87xG6_p9esk8O9Yl0kVve8CYudg-ZMZ7cXJTyXG4myoC-mJNyecUYitOdOFtShfY_WOv5-luqmbAic3nN8pWKvUdApO7uxodX-0iT1yrO26zkvZ5dkBOLkQUfEsDM-56sdOLEmKAeJXpAzuTl9cIHIlDgWHtq0iuYV48uz0ejcVovPzznIo-IwX36CAyPnlF7VvtTDec_9O1VFvWl25V56DaEunKr8A5Tx4CZPw2Z-EsGkKsW9eaGpHBgjMUHvr30vEKC8ShxthHdHN9EQhPrPyIIVGtw", headers=head, proxies=proxy, timeout=20).text
+                    fb_dtsg = get.split('name="fb_dtsg" value="')[1].split('"')[0]
+                    sharee(f, fb_dtsg, proxy, list_content_share, id_post, ck)
+                else:
+                    pass
+                    # log.configure(state = "normal")
+                    # log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Share và tag không thành công, còn {sum(len(list_nho) for list_nho in friends)} bạn bè\n\n')
+                    # log.configure(state = "disabled")
+                time.sleep(3)
+            except:
+                time.sleep(3)
+                sharee(f, fb_dtsg, proxy, list_content_share, id_post, ck)
+        threadss = []
+        for i in friends:
+                threadss+=[threading.Thread(target=sharee,args=(i,fb_dtsg,proxy,list_content_share, id_post, ck))]
+        for i in threadss:
+            i.start()
+        for i in threadss:
+            i.join()
+    
+
+        content = str(random.choice(list_content_edited))
+        tags = ''
+        url = random.choice(list_link)
+
+
+        d = {
+            'av': actor_id,
+            '__user': actor_id,
+            '__a': '1',
+            '__req': '19',
+            '__hs': '19741.HYP:comet_pkg.2.1..2.1',
+            'dpr': '1.5',
+            '__ccg': 'EXCELLENT',
+            '__rev': '1010904360',
+            '__s': 'nblg6o:04zpek:6g8brn',
+            '__hsi': '7325722523624536904',
+            '__dyn': '7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwhUKbgS3q2ibwNwnof8boG0x8bo6u3y4o2Gwfi0LVEtwMw65xO2OU7m2210wEwgolzUO0-E4a3a4oaEnxO0Bo7O2l2Utwwwi831wiE567Udo5qfK0zEkxe2GewyDwkUtxGm2SUbElxm3y11xfxmu3W3y261eBx_wHwdG7FoarCwLyESE6C14wwwOg2cwMwhEkxe3u364UrwFg662S269wkopg6C13whEeE4WVU-4E',
+            '__csr': 'gsgnRd5jJM_7ZTPjlv4Yyd4T5i9-TJBqlvlh7YZuuVsXFp4RJdpABUymilIF9GmV9f-qVJFpd5hiaSuqGRKrCyLjx2ECjUJWBCKr8fHG8UNeayFoCHjGcK9hExeudxfyfgDjUgDKeGvhpV8-UhVo9qz8a99VEG5VoCl5FauciBgO8DByVRzV9oO6EW3e58lxm7EKUS4oOEsyqzEhgC4o88rxSqEOFUpmEymE88-5EbE9AjXxeE-2G7Q3615zo66u4Egzo-19G4k8xO-K2y48dogxK10xu32cwyxq12xG2m6U1K41PwDw6HwpXwaS7U1d5o1aE1FE3nG0JUS8g3Mx21pg1do2Aw1Paew0k281O808OXw0tFU0bOYM1Vo1eVU2Xxe0pp0b-04bo13U4q0uG0g-0R81Qz0fjwdu0226052Fk0d_w3yE1co5i8x21vwGzU08sE15E0d1U3582q0VU0rZmmt2FA1kh-0ji0X40atwqE2Ig7elQ',
+            '__comet_req': '15',
+            'fb_dtsg': fb_dtsg,
+            'jazoest': '25600',
+            'lsd': '5mQuYXyXKlZHrdC1ppKIRo',
+            '__aaid': '0',
+            '__spin_r': '1010904360',
+            '__spin_b': 'trunk',
+            '__spin_t': '1705652690',
+            'fb_api_caller_class': 'RelayModern',
+            'fb_api_req_friendly_name': 'ComposerLinkAttachmentPreviewQuery',
+            'variables': '''{"feedLocation":"FEED_COMPOSER","focusCommentID":null,"goodwillCampaignId":"","goodwillCampaignMediaIds":[],"goodwillContentType":null,"params":{"url":"'''+url+'''"},"privacySelectorRenderLocation":"COMET_COMPOSER","renderLocation":"composer_preview","parentStoryID":null,"scale":1.5,"useDefaultActor":false,"shouldIncludeStoryAttachment":false,"__relay_internal__pv__IsWorkUserrelayprovider":false,"__relay_internal__pv__IsMergQAPollsrelayprovider":false}''',
+            'server_timestamps': 'true',
+            'doc_id': '7819369204746119',
+        }
+        h={
+            "cookie":ck,
+            "Content-Type":"application/x-www-form-urlencoded"
+        }
+
+        while True:
+            a = requests.post("https://www.facebook.com/api/graphql", headers=h, data=d, proxies=proxy, timeout=20)
+            try:
+                a = a.json()['data']['link_preview']['share_scrape_data'].replace("\\","\\\\").replace('"','\\"')
+                break
+            except:
+                print(a.text)
+
+        t = r'''{"input":{"story_id":"'''+story_id+'''","attachments":[{"link":{"share_scrape_data":"'''+a+r'"}}],"audience":{"privacy":{"allow":[],"base_state":"EVERYONE","deny":[],"tag_expansion_state":"UNSPECIFIED"}},"message":{"ranges":[],"text":"'''+content+r'''"},"with_tags_ids":['''+tags+r'''],"inline_activities":[],"text_format_preset_id":"0","tracking":[null],"logging":{"composer_session_id":"2feca083-c9cf-4272-92b9-4da3a431ea8b"},"editable_post_feature_capabilities":["CONTAINED_LINK","CONTAINED_MEDIA","POLL"],"actor_id":"'''+actor_id+'''","client_mutation_id":"5"},"displayCommentsFeedbackContext":null,"displayCommentsContextEnableComment":null,"displayCommentsContextIsAdPreview":null,"displayCommentsContextIsAggregatedShare":null,"displayCommentsContextIsStorySet":null,"feedLocation":"NEWSFEED","feedbackSource":1,"focusCommentID":null,"scale":1.5,"privacySelectorRenderLocation":"COMET_STREAM","renderLocation":"timeline","useDefaultActor":false,"UFI2CommentsProvider_commentsKey":null,"isGroupViewerContent":false,"isSocialLearning":false,"isWorkDraftFor":false,"__relay_internal__pv__IsWorkUserrelayprovider":false,"__relay_internal__pv__IsMergQAPollsrelayprovider":false,"__relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider":false,"__relay_internal__pv__CometUFIIsRTAEnabledrelayprovider":false,"__relay_internal__pv__StoriesArmadilloReplyEnabledrelayprovider":false,"__relay_internal__pv__StoriesRingrelayprovider":false}'''
+
+        input_link = str(urllib.parse.quote(t)).replace("/","%2F") 
+
+
+        # d= {
+        #     'av': actor_id,
+        #     '__user': actor_id,
+        #     '__a': '1',
+        #     '__req': '21',
+        #     '__hs': '19740.HYP:comet_pkg.2.1..2.1',
+        #     'dpr': '1.5',
+        #     '__ccg': 'GOOD',
+        #     '__rev': '1010882549',
+        #     '__s': '6r7thh:04zpek:ngta6o',
+        #     '__hsi': '7325417147562123406',
+        #     '__dyn': '7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwhUKbgS3q2ibwNwnof8boG0x8bo6u3y4o2Gwfi0LVEtwMw65xO2OU7m221FwgolzUO0-E4a3a4oaEnxO0Bo7O2l2Utwwwi831wiE567Udo5qfK0zEkxe2GewyDwkUtxGm2SUbElxm3y11xfxmu3W3y261eBx_wHwdG7FoarCwLyESE6C14wwwOg2cwMwhEkxe3u364UrwFg662S269wkopg6C13whEeE4WVU-4E',
+        #     '__csr': 'gbs9N4h7Mz2D95lbsaYIQZchcyIhiSyR8BblW45WmQhkil4ZbH_FbpfF4KA8oCFpbiAGt688qp97iyaZDy5leqrXKhbx6KrBCWQjKiiAA5pbBzVFVoiDzaBKmVFGG4Hi-mGAGegOi7HBwJK9LmUB3bDy9k2bG8x6EWiifxq9GfzFoWUWcxq7UCbxq2W789F8gx6444EjwGxm2qazo6u4FoKm4Ud-1ayEbE5m6E9o5216wNG3i328wEzFoy78kyo4y2m322q04LU1oU21w6nlwaG0W83HG1ig7m0bKw16y01fQw12m00NkE0Euu0peU1c8vCgG4o0DS014JwwyE7e0dTwTwDwEwaC0fVG4EkS0Lk0mR011e0cmg06JO1ewoy120No1SE1NU',
+        #     '__comet_req': '15',
+        #     'fb_dtsg': fb_dtsg,
+        #     'jazoest': '25381',
+        #     'lsd': 'YS4LJ6N5eDehrxfi1EWHLp',
+        #     '__aaid': '0',
+        #     '__spin_r': '1010882549',
+        #     '__spin_b': 'trunk',
+        #     '__spin_t': '1705581589',
+        #     'fb_api_caller_class': 'RelayModern',
+        #     'fb_api_req_friendly_name': 'cometMisinformationLinkDetectorPluginInternalStateReducerQuery',
+        #     'variables': '{"input":{"url":"'+url+'"},"scale":1.5}',
+        #     'server_timestamps': 'true',
+        #     'doc_id': '6541317025960799',
+        # }
+
+
+
+        # a = requests.post("https://www.facebook.com/api/graphql", headers=h, data=d, proxies=proxy, timeout=20).text
+
+        s = f"av={actor_id}&__user={actor_id}&__a=1&__req=1l&__hs=19741.HYP%3Acomet_pkg.2.1..2.1&dpr=1.5&__ccg=EXCELLENT&__rev=1010904932&__s=llc45t%3A04zpek%3A7sn5lt&__hsi=7325743013655834943&__dyn=7AzHK4HwkEng5K8G6EjBAo2nDwAxu13wFwhUngS3q2ibwNwnof8boG0x8bo6u3y4o2Gwfi0LVEtwMw65xO2OU7m2210wEwgolzUO0-E4a3a4oaEnxO0Bo7O2l2Utwwwi831wiE567Udo5qfK0zEkxe2GewyDwkUtxGm2SUbElxm3y11xfxmu3W3y261eBx_wHwdG7FoarCwLyESE6C14wwwOg2cwMwhEkxe3u364UrwFg662S269wkopg6C13whEeE4WVU-4E&__csr=gpgu8agzdPgFkRQW4hIG2luJbllkh9uBT8JZFhNqKjkJUyp7AAFJmmRHmWV6uuAYCGmHV29aA8lai-uqHZ4JpkvgJoGEyaz7AVkmWAyepunGVk98vDiyrFeuGZaElhUvGUyECXyUiQaAy8O9UDh8lDx6nFxKaGF9oCiicUOEO5RUKEydyFbHKEKm5oWq1cyoO78a8ymcxC8Ki5UmAAGdzoS5UG4oGu8xu5oF38tybJK3eczGUkzonzoiBx25ouxF1G262B4yU7W2K10zpojyGCggxWifyU7OvwRwABwnEpwWwhEnU3wg1lU22xa0sW09Bwda0Do7gwmKVU567E0Ke0uW0x805Xy0sF01dh0089-03T-z07Bw4LyE3nxi0o90b-04bo15Emw22E1683lw7eEE3LBwcy023a052pA0dRw3B812824y8C3i1kg08wE15E0dbo2v82q0-E0rGmQt2FUaEcJ04QweN03HFE&__comet_req=15&fb_dtsg={fb_dtsg}&jazoest=25310&lsd=YSWSPtxu94I8I5t0XZLwt3&__aaid=0&__spin_r=1010904932&__spin_b=trunk&__spin_t=1705657461&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=ComposerStoryEditMutation&variables={input_link}&server_timestamps=true&doc_id=7396379427067566"
+
+        a = requests.post("https://www.facebook.com/api/graphql", headers=h, data=s, proxies=proxy, timeout=20).json()
+
+
+        if ("errors" in a)==False:
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa thành công post có id {id_post}\n\n')
+            log.configure(state = "disabled")
+        else:
+            open("log.txt","a", encoding="utf-8").write("edit"+a.text+"\n")
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Sửa không thành công post có id {id_post}\n\n')
+            log.configure(state = "disabled")
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name}: Chạy thành công\n\n')
+        log.configure(state = "disabled")
+    except Exception as e:
+        open("Cookie_error.txt","a", encoding="utf-8").write(ck+"\n")
+        traceback.print_exc()
+        log.configure(state = "normal")
+        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] #{thread_name} kết thúc vì gặp sự cố\n\n')
+        log.configure(state = "disabled")
+
+def get_proxy(api_proxy):
+    global list_key, running
+    try:
+        if len(list_key)>0 and running==True:
+            if api_proxy == "Tinsoft":
+                k = random.choice(list_key)
+                a = requests.get(f"http://proxy.tinsoftsv.com/api/changeProxy.php?key={k}")
+                if '"success":true' in str(a.text):
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
+                    log.configure(state = "disabled")
+                    return a.json()["proxy"]
+                elif 'for next change' in str(a.text):
+                    a = requests.get(f"http://proxy.tinsoftsv.com/api/getProxy.php={k}").json()
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
+                    log.configure(state = "disabled")
+                    return a["proxy"]
+                
+                elif 'key expired!' in str(a.text):
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Key hết hạn, tiến hành đổi key\n\n')
+                    log.configure(state = "disabled")
+                    list_key.remove(k)
+                    return get_proxy(api_proxy)
+                elif "Request so fast, fix your code or be banned" in a.text:
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy quá nhanh, chờ 10s để lấy lại\n\n')
+                    log.configure(state = "disabled")
+                    time.sleep(10)
+                    return get_proxy(api_proxy)
+                elif "not found" in a.text:
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết proxy, thử lại sau 6s\n\n')
+                        log.configure(state = "disabled")
+                        time.sleep(6)
+                        return get_proxy(api_proxy)
+                else:
+                    print(a.text)
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thất bại, tiến hành lấy lại\n\n')
+                    log.configure(state = "disabled")
+                    time.sleep(6)
+                    return get_proxy(api_proxy)
+            elif api_proxy == "Shoplike":
+                k = random.choice(list_key)
+                a = requests.get(f"http://proxy.shoplike.vn/Api/getNewProxy?access_token={k}")
+                if '"status":"success"' in a.text:
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
+                    log.configure(state = "disabled")
+                    return a.json()['data']["proxy"]
+                else:
                     if "giay de get proxy moi" in a.text:
                         aa = requests.get(f"http://proxy.shoplike.vn/Api/getCurrentProxy?access_token={k}").json()
-                        frame_text_box.configure(state = "normal")
-                        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-                        frame_text_box.insert(customtkinter.END, f'Proxy chưa reset, lấy proxy hiện tại thành công\n\n')
-                        frame_text_box.configure(state = "disabled")
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
+                        log.configure(state = "disabled")
                         return aa["data"].get("proxy")
                     elif "Het proxy, thu lai sau" in a.text:
-                        frame_text_box.configure(state = "normal")
-                        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-                        frame_text_box.insert(customtkinter.END, f'Tạm thời hết proxy, đợi 10s để tiến hành lấy lại\n\n')
-                        frame_text_box.configure(state = "disabled")
-                        time.sleep(10)
-                        return get_proxy()
-                    elif "Key khong ton tai hoac da het han" in a.text:
-                        frame_text_box.configure(state = "normal")
-                        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-                        frame_text_box.insert(customtkinter.END, f'Key {k} hết hạn, tiến hành đổi key proxy\n\n')
-                        frame_text_box.configure(state = "disabled")
-                        list_key_proxy.remove(k)
-                        return get_proxy()
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết proxy, thử lại sau 6s\n\n')
+                        log.configure(state = "disabled")
+                        time.sleep(6)
+                        return get_proxy(api_proxy)
                     else:
-                        frame_text_box.configure(state = "normal")
-                        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-                        frame_text_box.insert(customtkinter.END, f'Lấy proxy thất bại, tiến hành lấy lại\n\n')
-                        frame_text_box.configure(state = "disabled")
-                        time.sleep(10)
-                        return get_proxy()
-
+                        print(a.text)
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thất bại, tiến hành lấy lại\n\n')
+                        log.configure(state = "disabled")
+                        time.sleep(6)
+                        return get_proxy(api_proxy)
+            elif api_proxy == "None":
+                return None
+            elif api_proxy == "Dcom":
+                dcom_name = random.choices(list_key)
+                os.system(f"rasdial \"{dcom_name}\" /disconnect")
+                # Đợi 5 giây
+                time.sleep(5)
+                # Thực hiện lệnh để kết nối lại dcom
+                os.system(f"rasdial \"{dcom_name}\"")
+                log.configure(state = "normal")
+                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
+                log.configure(state = "disabled")
+            else:
+                return "break"
         else:
-            return "None"
+             return "stop"
     except Exception as e:
             print(e)
-            frame_text_box.configure(state = "normal")
-            frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-            frame_text_box.insert(customtkinter.END, f'Lấy proxy không thành công\n\n')
-            frame_text_box.configure(state = "disabled")
-            return get_proxy()
-
-
-
-def open_ck():
-    global file_receiver
-    file_text_path = filedialog.askopenfilename(title="Chọn file mail nhận")
-    if file_text_path!="":
-        frame_text_box.configure(state = "normal")
-        list_ck = open(file_text_path, "r", encoding="utf-8").readlines()
-        file_receiver = [line.strip("\n") for line in list_ck]
-        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-        frame_text_box.insert(customtkinter.END, f'Nhập thành công {len(file_receiver)} reciever\n\n')
-        frame_text_box.configure(state = "disabled")
-
-def attach_file():
-    global file_attach
-    file_text_path = filedialog.askopenfilename(title="Chọn file đính kém")
-    if file_text_path!="":
-        frame_text_box.configure(state = "normal")
-        file_attach = file_text_path
-        frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-        frame_text_box.insert(customtkinter.END, f'Nhập thành công file đính kèm: {file_text_path}\n\n')
-        frame_text_box.configure(state = "disabled")
-index_ck = 0
-
-def send_mess():
-    def run(subject,receiver,content):
-        try:
-            p = get_proxy()
-            if p != "None":
-                set_up_proxy(p)
-                turn_on()
-            dadada = random.choice(file_sender)
-            data = dadada.strip("\n").split("|")
-            email = data[0]
-            pss = data[1]
-            if email.split(":")[0].split("@")[1]=="gmail.com":
-                imap = "smtp.gmail.com"
-                port = 587
-            else:
-                imap = "smtp-mail.outlook.com"
-                port = 587
-            server = smtplib.SMTP(imap, port)
-            server.starttls()
-            server.login(email,pss)
-
-            msg = MIMEMultipart()
-            msg['From'] = email
-            msg['To'] = receiver
-            msg['Subject'] = subject
-
-
-            body = f"""
-            {content}
-            """
-
-            if file_attach != "":
-                from email.mime.application import MIMEApplication
-                with open(file_attach, 'rb') as f:
-                    attachment = MIMEApplication(f.read(), _subtype = os.path.basename(f.name).split(".")[1])
-                    attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(f.name))
-                    msg.attach(attachment)
-            if content!="":
-                msg.attach(MIMEText(body, 'html', "utf-8"))
-
-            server.send_message(msg)
-            server.quit()
-            frame_text_box.configure(state = "normal")
-            frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-            frame_text_box.insert(customtkinter.END, f'Gửi thành công tới {i} bằng {email}|{pss}\n\n')
-            frame_text_box.configure(state = "disabled")
-
-        except smtplib.SMTPAuthenticationError:
-            frame_text_box.configure(state = "normal")
-            frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-            frame_text_box.insert(customtkinter.END, f'{email}|{pss} bị khóa hoặc sai pass\n\n')
-            frame_text_box.configure(state = "disabled")
-            file_sender.remove(dadada)
-            run(subject,receiver,content)
-        except Exception as e:
-            frame_text_box.configure(state = "normal")
-            frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-            frame_text_box.insert(customtkinter.END, f'Gửi thất bại tới {i}\n\n')
-            frame_text_box.configure(state = "disabled")
-            run(subject,receiver,content)
-    for j in file_receiver:
-        i = j.strip("\n")
-        subject = subject_input.get()
-        run(subject, i, content)
-        time.sleep(int(delay_input.get()))
-    clear_proxy()
-    frame_text_box.configure(state = "normal")
-    frame_text_box.insert(customtkinter.END, f'--- {datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")} ---\n')
-    frame_text_box.insert(customtkinter.END, f'Hoàn thành spam đến toàn bộ list mail \n\n')
-    frame_text_box.configure(state = "disabled")
-
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy không thành công\n\n')
+            log.configure(state = "disabled")
+            time.sleep(6)
+            return get_proxy(api_proxy)
     
+running = True
 
 def start():
-        t = threading.Thread(target=send_mess)
+    global api_proxy, list_key, list_content, list_content_edited, list_link, list_content_share, running
+    if check_status()==True:
+        list_key = proxy_textbox.get("0.0", customtkinter.END).split("\n")
+        list_key = list_key[:len(list_key)-1]
+        list_cookie = cookie_textbox.get("0.0", customtkinter.END).split("\n")
+        list_cookie = list_cookie[:len(list_cookie)-1]
+        list_content = content_trc_textbox.get("0.0", customtkinter.END).split("\n")
+        list_content = list_content[:len(list_content)-1]
+        list_content_edited = content_sau_textbox.get("0.0", customtkinter.END).split("\n")
+        list_content_edited = list_content_edited[:len(list_content_edited)-1]
+        list_content_share = content_share_textbox.get("0.0", customtkinter.END).split("\n")
+        list_content_share = list_content_share[:len(list_content_share)-1]
+        list_link = link_edited.get("0.0", customtkinter.END).split("\n")
+        list_link = list_link[:len(list_link)-1]
+
+        def run():
+            global running
+            for i in range(0,len(list_cookie),int(luong.get())):
+                if running ==True:
+                    threads=[]
+                    aaa = list_cookie[i:i+int(luong.get())]
+                    p = get_proxy(api_proxy)
+                    print(p)
+                    if p!="break" and p!="stop":
+                        for i in range(len(aaa)):
+                            c = aaa[i]
+                            thread_name = f"Thread {i+1}"
+                            threads+=[threading.Thread(target=share_and_tag,args=(c, p,thread_name))]
+                        for i in threads:
+                            i.start()
+                        for i in threads:
+                            i.join(int(end_luong.get()))
+                    elif p =="stop":
+                        running =True
+                        break
+                    else:
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết key proxy khả dụng, vui lòng nhập lại dữ liệu\n\n')
+                        log.configure(state = "disabled")
+                        break
+            log.configure(state = "normal")
+            log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hoàn thành nhiệm vụ cho list cookie\n\n')
+            log.configure(state = "disabled")
+        
+        t = threading.Thread(target=run)
         t.start()
 
-input_frame = customtkinter.CTkFrame(app, width = 410)
-input_frame.grid(row = 0, column = 0, padx = 20, pady = (20, 10))
-delay_input = customtkinter.CTkEntry(input_frame, width = 200, placeholder_text="Delay")
-delay_input.grid(row = 0, column = 0, padx = (0, 5))
-subject_input = customtkinter.CTkEntry(input_frame, width=200, placeholder_text="Tiêu đề")
-subject_input.grid(row = 0, column = 1, padx = (5, 0))
+def stop():
+    global running
+    running = False
 
-button_frame = customtkinter.CTkFrame(app, width = 410, height= 50)
-button_frame.grid(row = 2, column = 0, pady = 10)
+def test():
+    list_cookie = cookie_textbox.get("0.0", customtkinter.END)
+    print(list_cookie=="\n")
+    print(luong.get()=="")
 
-start_button_frame = customtkinter.CTkFrame(app, width = 410, height = 50)
-start_button_frame.grid(row = 1, column = 0, padx = (0,0))
+menu = customtkinter.CTkFrame(app, height=290)
+menu.grid(row = 0, column = 0, pady = (10, 10), padx = 20, sticky = "nsew")
+menu.rowconfigure(0, weight=1)
+menu.columnconfigure(2, weight=1)
 
-start_button = customtkinter.CTkButton(start_button_frame, width = 200, height = 50, text = 'Start', command=start)
-start_button.grid(row = 0, column = 0, padx = (0,5))
+#cookie
 
-start_button = customtkinter.CTkButton(start_button_frame, width = 200, height = 50, text = 'Key Proxy', command=open_proxy_key)
-start_button.grid(row = 0, column = 1, padx = (5,0))
+cookie_frame = customtkinter.CTkFrame(menu, width=650)
+cookie_frame.grid(row = 0, column = 0, sticky = "nsew")
+cookie_frame.rowconfigure(1, weight=1)
 
-start_button = customtkinter.CTkButton(button_frame, width = 95, height = 50, text = 'File', command=attach_file)
-start_button.grid(row = 0, column = 1, padx = (0,10))
+cookie_label = customtkinter.CTkLabel(cookie_frame, text="Nhập cookie", fg_color="transparent")
+cookie_label.grid(row = 0, column = 0)
+cookie_textbox = customtkinter.CTkTextbox(cookie_frame, height=290, width=400, wrap = customtkinter.NONE)
+cookie_textbox.grid(row = 1, column = 0, sticky = "nsew")
 
-txt_button = customtkinter.CTkButton(button_frame, width = 95, height = 50, text = 'Template', command=contents)
-txt_button.grid(row = 0, column = 2, padx = (0,10))
+#content
 
-file_ck = customtkinter.CTkButton(button_frame, width = 95, height = 50, text = 'Receiver',command=open_ck)
-file_ck.grid(row = 0, column = 3, padx = (0,0))
+content_frame = customtkinter.CTkFrame(menu, width=420)
+content_frame.grid(row = 0, column = 1, sticky = "nsew")
+content_frame.rowconfigure(2, weight=1)
 
-file_uid = customtkinter.CTkButton(button_frame, width = 95, height = 50, text = 'Sender',command=open_uid)
-file_uid.grid(row = 0, column = 4, padx = (10,0))
+content = customtkinter.CTkFrame(content_frame, height=1)
+content.grid(row = 0, column = 0, sticky = "nsew")
+content_trc_label = customtkinter.CTkLabel(content, text="Nhập nội dung ban đầu", fg_color="transparent")
+content_trc_label.grid(row = 0, column = 0, sticky = "nsew")
+content_trc_textbox = customtkinter.CTkTextbox(content, height=115, width=270, wrap = customtkinter.NONE)
+content_trc_textbox.grid(row = 1, column = 0, sticky = "nsew")
 
-frame_text_box = customtkinter.CTkTextbox(app, width = 410, height= 320)
-frame_text_box.grid(row = 4, column = 0, pady = 10)
-font_log = customtkinter.CTkFont(family="Times New Roman", size=15, weight="normal", slant="italic")
-font_normal = customtkinter.CTkFont(family="Times New Roman", size=15, weight="normal")
-# frame_text_box.configure(font = font_log)
-frame_text_box.configure(state = "disabled")
+content = customtkinter.CTkFrame(content_frame, height=115)
+content.grid(row = 1, column = 0, sticky = "nsew")
+content.rowconfigure(1, weight=1)
+content_share_label = customtkinter.CTkLabel(content, text="Nhập nội dung lúc share", fg_color="transparent")
+content_share_label.grid(row = 0, column = 0, sticky = "nsew")
+content_share_textbox = customtkinter.CTkTextbox(content, height=115, width=270, wrap = customtkinter.NONE)
+content_share_textbox.grid(row = 1, column = 0, sticky = "nsew")
+
+content = customtkinter.CTkFrame(content_frame, height=115)
+content.grid(row = 2, column = 0, sticky = "nsew")
+content.rowconfigure(1, weight=1)
+content_sau_label = customtkinter.CTkLabel(content, text="Nhập nội dung lúc sau", fg_color="transparent")
+content_sau_label.grid(row = 0, column = 0, sticky = "nsew")
+content_sau_textbox = customtkinter.CTkTextbox(content, height=115, width=270, wrap = customtkinter.NONE)
+content_sau_textbox.grid(row = 1, column = 0, sticky = "nsew")
+
+#start_frame
+
+start_frame = customtkinter.CTkFrame(menu)
+start_frame.grid(row = 0, column = 2, sticky = "nsew")
+start_frame.columnconfigure(0, weight=1)
+start_frame.rowconfigure((0,1,2), weight=1)
+
+link_edited_frame = customtkinter.CTkFrame(start_frame)
+link_edited_frame.grid(row = 0, column = 0, sticky = "nsew")
+link_edited_frame.rowconfigure((1), weight=1)
+link_edited_frame.columnconfigure(0, weight=1)
+link_edited_label = customtkinter.CTkLabel(link_edited_frame, text="Nhập link gắn post", fg_color="transparent")
+link_edited_label.grid(row = 0, column = 0, sticky = "nsew")
+link_edited = customtkinter.CTkTextbox(link_edited_frame, height=160, wrap = customtkinter.NONE)
+link_edited.grid(row = 1, column = 0, sticky = "nsew")
+
+luong_frame = customtkinter.CTkFrame(start_frame)
+luong_frame.grid(row = 1, column = 0, sticky = "nsew")
+luong_frame.columnconfigure((0, 1), weight=1)
+luong_frame.rowconfigure(1, weight=1)
+luong = customtkinter.CTkEntry(luong_frame, height=10, placeholder_text="Nhập số luồng")
+luong.grid(row = 1, column = 0, sticky = "nsew")
+end_luong = customtkinter.CTkEntry(luong_frame, height=10, placeholder_text="Nhập Thread Timeouts")
+end_luong.grid(row = 1, column = 1, sticky = "nsew")
+
+proxy_start_frame = customtkinter.CTkFrame(start_frame, width=200)
+proxy_start_frame.grid(row = 2, column = 0, sticky = "nsew")
+proxy_start_frame.rowconfigure(0, weight=1)
+proxy_start_frame.columnconfigure((0,1), weight=1)
+
+proxy_frame = customtkinter.CTkFrame(proxy_start_frame)
+proxy_frame.grid(row = 0, column = 0, sticky = "nsew")
+proxy_frame.columnconfigure(0, weight=1)
+proxy_frame.rowconfigure(2, weight=1)
+
+proxy_label = customtkinter.CTkLabel(proxy_frame, text="Nhập Proxy", fg_color="transparent")
+proxy_label.grid(row = 0, column = 0)
+
+api_proxy = customtkinter.StringVar()
+
+def select_option(event):
+    global api_proxy
+    api_proxy = drop_down_menu.get()
+
+options = ["None", "Tinsoft", "Shoplike", "Dcom"]
+drop_down_menu = customtkinter.CTkOptionMenu(proxy_frame, values=options, command=select_option)
+drop_down_menu.set("Chọn proxy api")
+drop_down_menu.grid(row=1, column=0, sticky = "nsew")
+
+proxy_textbox = customtkinter.CTkTextbox(proxy_frame, width=100, height=150, wrap = customtkinter.NONE)
+proxy_textbox.grid(row = 2, column = 0, sticky = "nsew")
+
+
+start_frame = customtkinter.CTkFrame(proxy_start_frame)
+start_frame.grid(row = 0, column = 1, sticky = "nsew")
+start_frame.columnconfigure(0, weight=1)
+start_frame.rowconfigure((0,1), weight=1)
+start_button = customtkinter.CTkButton(start_frame, text="START", command=start)
+start_button.grid(row = 0, column = 0, sticky = "nsew")
+stop_button = customtkinter.CTkButton(start_frame, text="STOP", command=stop)
+stop_button.grid(row = 1, column = 0, sticky = "nsew")
+
+log = customtkinter.CTkTextbox(app, height= 250)
+log.grid(row = 1, column = 0, pady = (0, 10), padx = 20, sticky = "nsew")
+log.configure(state = "disabled")
+
 
 app.mainloop()
