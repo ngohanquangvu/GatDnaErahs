@@ -493,6 +493,16 @@ def get_proxy(api_proxy):
                         return get_proxy(api_proxy)
             elif api_proxy == "None":
                 return None
+            elif api_proxy == "Dcom":
+                dcom_name = random.choices(list_key)
+                os.system(f"rasdial \"{dcom_name}\" /disconnect")
+                # Đợi 5 giây
+                time.sleep(5)
+                # Thực hiện lệnh để kết nối lại dcom
+                os.system(f"rasdial \"{dcom_name}\"")
+                log.configure(state = "normal")
+                log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
+                log.configure(state = "disabled")
             else:
                 return "break"
         else:
@@ -653,7 +663,7 @@ def select_option(event):
     global api_proxy
     api_proxy = drop_down_menu.get()
 
-options = ["None", "Tinsoft", "Shoplike"]
+options = ["None", "Tinsoft", "Shoplike", "Dcom"]
 drop_down_menu = customtkinter.CTkOptionMenu(proxy_frame, values=options, command=select_option)
 drop_down_menu.set("Chọn proxy api")
 drop_down_menu.grid(row=1, column=0, sticky = "nsew")
