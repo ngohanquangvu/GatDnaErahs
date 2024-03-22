@@ -491,6 +491,34 @@ def get_proxy(api_proxy):
                         log.configure(state = "disabled")
                         time.sleep(6)
                         return get_proxy(api_proxy)
+            elif api_proxy == "ProxyFB":
+                k = random.choice(list_key)
+                a = requests.get(f"http://api.proxyfb.com/api/changeProxy.php?key={k}")
+                if '"success":true' in a.text:
+                    log.configure(state = "normal")
+                    log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
+                    log.configure(state = "disabled")
+                    return a.json()["proxy"]
+                else:
+                    if "Bạn cần đợi thêm" in a.text:
+                        aa = requests.get(f"http://api.proxyfb.com/api/getProxy.php?key={k}").json()
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thành công\n\n')
+                        log.configure(state = "disabled")
+                        return aa.get("proxy")
+                    elif "proxy not found" in a.text:
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Hết proxy, thử lại sau 6s\n\n')
+                        log.configure(state = "disabled")
+                        time.sleep(6)
+                        return get_proxy(api_proxy)
+                    else:
+                        print(a.text)
+                        log.configure(state = "normal")
+                        log.insert(customtkinter.END, f'[{datetime.datetime.now().strftime("%H:%M:%S %d/%m/%Y")}] Lấy proxy thất bại, tiến hành lấy lại\n\n')
+                        log.configure(state = "disabled")
+                        time.sleep(6)
+                        return get_proxy(api_proxy)
             elif api_proxy == "None":
                 return None
             elif api_proxy == "Dcom":
@@ -663,7 +691,7 @@ def select_option(event):
     global api_proxy
     api_proxy = drop_down_menu.get()
 
-options = ["None", "Tinsoft", "Shoplike", "Dcom"]
+options = ["None", "Tinsoft", "Shoplike", "Dcom", "ProxyFB"]
 drop_down_menu = customtkinter.CTkOptionMenu(proxy_frame, values=options, command=select_option)
 drop_down_menu.set("Chọn proxy api")
 drop_down_menu.grid(row=1, column=0, sticky = "nsew")
